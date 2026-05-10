@@ -1,0 +1,28 @@
+{
+  "routes": [
+    {
+      "path": "/",
+      "src": "src/pages/Index.tsx"
+    }
+  ],
+  "components": [
+    { "name": "Cursor", "src": "src/components/Cursor.tsx" },
+    { "name": "Nav", "src": "src/components/Nav.tsx" },
+    { "name": "Hero", "src": "src/components/Hero.tsx" },
+    { "name": "Marquee", "src": "src/components/Marquee.tsx" },
+    { "name": "About", "src": "src/components/About.tsx" },
+    { "name": "Works", "src": "src/components/Works.tsx" },
+    { "name": "WorkCard", "src": "src/components/WorkCard.tsx" },
+    { "name": "Skills", "src": "src/components/Skills.tsx" },
+    { "name": "Life", "src": "src/components/Life.tsx" },
+    { "name": "Contact", "src": "src/components/Contact.tsx" },
+    { "name": "Footer", "src": "src/components/Footer.tsx" },
+    { "name": "MusicModal", "src": "src/components/MusicModal.tsx" },
+    { "name": "MusicPlayer", "src": "src/components/MusicPlayer.tsx" },
+    { "name": "LifeQuizModal", "src": "src/components/LifeQuizModal.tsx" },
+    { "name": "MouseTrail", "src": "src/components/MouseTrail.tsx" },
+    { "name": "SoundEffect", "src": "src/components/SoundEffect.tsx" },
+    { "name": "ScrollProgress", "src": "src/components/ScrollProgress.tsx" },
+    { "name": "EasterEgg", "src": "src/components/EasterEgg.tsx" }
+  ]
+}

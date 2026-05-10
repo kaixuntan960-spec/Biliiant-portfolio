@@ -1,0 +1,66 @@
+{
+  "title": "B端项目",
+  "generatedAt": "2026-04-07T11:40:51.379Z",
+  "pages": [
+    {
+      "index": 1,
+      "src": "/works/b-end/pages/001.png",
+      "label": "1",
+      "original": "1.png"
+    },
+    {
+      "index": 2,
+      "src": "/works/b-end/pages/002.png",
+      "label": "2",
+      "original": "2.png"
+    },
+    {
+      "index": 3,
+      "src": "/works/b-end/pages/003.png",
+      "label": "3",
+      "original": "3.png"
+    },
+    {
+      "index": 4,
+      "src": "/works/b-end/pages/004.png",
+      "label": "4",
+      "original": "4.png"
+    },
+    {
+      "index": 5,
+      "src": "/works/b-end/pages/005.png",
+      "label": "5",
+      "original": "5.png"
+    },
+    {
+      "index": 6,
+      "src": "/works/b-end/pages/006.png",
+      "label": "6",
+      "original": "6.png"
+    },
+    {
+      "index": 7,
+      "src": "/works/b-end/pages/007.png",
+      "label": "7",
+      "original": "7.png"
+    },
+    {
+      "index": 8,
+      "src": "/works/b-end/pages/008.png",
+      "label": "8",
+      "original": "8.png"
+    },
+    {
+      "index": 9,
+      "src": "/works/b-end/pages/009.png",
+      "label": "9",
+      "original": "9.png"
+    },
+    {
+      "index": 10,
+      "src": "/works/b-end/pages/010.png",
+      "label": "10",
+      "original": "10.png"
+    }
+  ]
+}

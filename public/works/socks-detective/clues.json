@@ -1,0 +1,48 @@
+{
+  "pdfUrl": "/external-book.pdf",
+  "bookTitle": { "zh": "袜子侦探社", "en": "The Sock Detective Agency" },
+  "intro": {
+    "zh": "这是一本「看图解密」式绘本：画面里藏着前后呼应的细节。右侧「侦探笔记」会随页码更新提示；遇到谜面时，试着把你在画里读到的答案打出来。",
+    "en": "This picture book is built like a visual puzzle: details echo across spreads. The detective notes update as you read—when a riddle appears, type what you see in the artwork."
+  },
+  "pageNotes": [
+    {
+      "fromPage": 1,
+      "toPage": 3,
+      "zh": "先建立「视觉档案」：记住主角的袜子纹样、配色与场景里反复出现的道具。后面很多页会用「谁在场 / 谁缺席」来误导你。",
+      "en": "Build a visual inventory: sock patterns, palette, and recurring props. Later spreads play with who is present vs missing."
+    },
+    {
+      "fromPage": 4,
+      "toPage": 8,
+      "zh": "把每一跨页当成「现场照片」：注意地面痕迹、光影方向、以及被画得很小但画了两次的东西——重复往往是作者埋的线索。",
+      "en": "Treat each spread like a crime-scene photo: ground marks, light direction, and tiny objects drawn twice—repetition is often intentional."
+    },
+    {
+      "fromPage": 9,
+      "toPage": 999,
+      "zh": "接近谜底时，回到最开始的跨页对照：真正的答案通常早就画在封面或扉页里，只是换了一种距离让你看见。",
+      "en": "Near the end, compare back to the opening spreads—the answer is often already on the cover or title page, just seen from a new distance."
+    }
+  ],
+  "riddles": [
+    {
+      "id": "socks-title",
+      "showFromPage": 2,
+      "promptZh": "侦探社名字里，被「侦」和「探」夹在中间的两个字是什么？（提示：穿在脚上）",
+      "promptEn": "In the agency name, what everyday clothing sits between detective work? (Two characters in Chinese.)",
+      "accept": ["袜子", "襪子", "袜子。", "襪子。"],
+      "hintZh": "书名四个字里，中间两个就是答案。",
+      "hintEn": "Look at the four-character Chinese title on the cover."
+    },
+    {
+      "id": "agency",
+      "showFromPage": 6,
+      "promptZh": "故事里谁在「组织线索」——是侦探本人，还是他收集的证物？用两个字回答：侦探 / 证物",
+      "promptEn": "Type 侦探 or 证物 (two characters) depending on who organizes the clues in your reading.",
+      "accept": ["侦探", "偵探", "证物", "證物"],
+      "hintZh": "两种答案都算对，选你画面里更像主角的一方。",
+      "hintEn": "Either answer is accepted—pick what feels like the protagonist of your reading."
+    }
+  ]
+}
