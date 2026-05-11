@@ -19,7 +19,14 @@
       "Bash(xargs grep -l \"WorkCard.tsx\")",
       "Bash(grep -o '.\\\\{100\\\\}dark.\\\\{0,50\\\\}linear-gradient.\\\\{300\\\\}' index-EvAdKD0H.js)",
       "Bash(grep -o '.\\\\{300\\\\}shiftX.\\\\{0,30\\\\}shiftY.\\\\{300\\\\}' index-EvAdKD0H.js)",
-      "Bash(grep -o 'mt-4 flex items-center gap-2.\\\\{0,1500\\\\}' index-EvAdKD0H.js)"
+      "Bash(grep -o 'mt-4 flex items-center gap-2.\\\\{0,1500\\\\}' index-EvAdKD0H.js)",
+      "Bash(npx tsc *)",
+      "Bash(npx --yes @gltf-transform/cli --version)",
+      "Bash(npx @gltf-transform/cli optimize D:/xwechat_files/wxid_vpxf92z6i00a21_49c0/msg/file/2026-05/人物模.glb public/models/character_new.glb --compress draco --texture-compress webp)",
+      "Bash(mkdir -p public/draco)",
+      "Bash(cp node_modules/three/examples/jsm/libs/draco/draco_decoder.js public/draco/draco_decoder.js)",
+      "Bash(cp node_modules/three/examples/jsm/libs/draco/draco_decoder.wasm public/draco/draco_decoder.wasm)",
+      "Bash(cp node_modules/three/examples/jsm/libs/draco/draco_wasm_wrapper.js public/draco/draco_wasm_wrapper.js)"
     ]
   }
 }
