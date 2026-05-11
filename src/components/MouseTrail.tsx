@@ -59,7 +59,10 @@ const MouseTrail = ({ enabled = true }: { enabled?: boolean }) => {
       }
     };
 
-    const animate = () => {
+    const animate = (t: number) => {
+      rafRef.current = requestAnimationFrame(animate);
+      if (t - lastTRef.current < 33) return; // ~30fps
+      lastTRef.current = t;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       particlesRef.current = particlesRef.current.filter((p) => p.alpha > 0.01);
       particlesRef.current.forEach((p) => {
@@ -72,9 +75,9 @@ const MouseTrail = ({ enabled = true }: { enabled?: boolean }) => {
         p.alpha *= 0.88;
         p.size *= 0.96;
       });
-      rafRef.current = requestAnimationFrame(animate);
     };
-    animate();
+    const lastTRef = { current: 0 };
+    animate(0);
 
     window.addEventListener("mousemove", onMouseMove);
     return () => {

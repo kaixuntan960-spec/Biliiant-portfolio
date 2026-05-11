@@ -15,20 +15,21 @@ const Cursor = () => {
       mouseY = e.clientY;
 
       if (dotRef.current) {
-        dotRef.current.style.left = `${mouseX - 6}px`;
-        dotRef.current.style.top = `${mouseY - 6}px`;
+        dotRef.current.style.transform = `translate(${mouseX - 6}px, ${mouseY - 6}px)`;
       }
     };
 
-    const animate = () => {
-      ringX += (mouseX - ringX) * 0.12;
-      ringY += (mouseY - ringY) * 0.12;
+    let lastT = 0;
+    const animate = (t: number) => {
+      requestAnimationFrame(animate);
+      if (t - lastT < 16) return; // ~60fps max，避免超频
+      lastT = t;
+      ringX += (mouseX - ringX) * 0.18;
+      ringY += (mouseY - ringY) * 0.18;
 
       if (ringRef.current) {
-        ringRef.current.style.left = `${ringX - 18}px`;
-        ringRef.current.style.top = `${ringY - 18}px`;
+        ringRef.current.style.transform = `translate(${ringX - 18}px, ${ringY - 18}px)`;
       }
-      requestAnimationFrame(animate);
     };
 
     const onEnterInteractive = () => {
@@ -54,7 +55,7 @@ const Cursor = () => {
     };
 
     document.addEventListener("mousemove", onMove);
-    animate();
+    requestAnimationFrame(animate);
 
     const interactives = document.querySelectorAll("a, button, [data-cursor]");
     interactives.forEach((el) => {

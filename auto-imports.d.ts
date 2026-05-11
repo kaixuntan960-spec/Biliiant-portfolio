@@ -61,6 +61,7 @@ declare global {
   const Info: typeof import('lucide-react').Info
   const InfoIcon: typeof import('lucide-react').InfoIcon
   const Languages: typeof import('lucide-react').Languages
+  const Layout: typeof import('lucide-react').Layout
   const Linkedin: typeof import('lucide-react').Linkedin
   const Loader: typeof import('lucide-react').Loader
   const Loader2Icon: typeof import('lucide-react').Loader2Icon
@@ -99,6 +100,7 @@ declare global {
   const Sun: typeof import('lucide-react').Sun
   const Suspense: typeof import('react').Suspense
   const Table: typeof import('lucide-react').Table
+  const Text: typeof import('lucide-react').Text
   const TriangleAlertIcon: typeof import('lucide-react').TriangleAlertIcon
   const Unlock: typeof import('lucide-react').Unlock
   const User: typeof import('lucide-react').User
