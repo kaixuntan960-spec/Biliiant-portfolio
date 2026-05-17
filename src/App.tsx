@@ -18,6 +18,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/posters" element={<Posters />} />
+            <Route path="/works" element={<Navigate to="/" replace />} />
+            <Route path="/works/socks-detective" element={<Navigate to="/works/socks-detective/read" replace />} />
             <Route path="/works/socks-detective/read" element={<SockDetectiveBook />} />
             <Route path="/sock-detective-book" element={<Navigate to="/works/socks-detective/read" replace />} />
             <Route path="/works/:slug/read" element={<PictureBookExperience />} />

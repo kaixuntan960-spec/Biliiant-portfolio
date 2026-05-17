@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Shadows+Into+Light+Two&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -5,6 +6,7 @@
 
 @theme inline {
   --font-sans: var(--fontSans);
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -806,4 +808,18 @@ img, video {
 .book-page-flip-prev {
   animation: book-page-turn-prev 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   transform-origin: right center;
+}
+
+.theme-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.theme-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.theme-scroll::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 10px;
+}
+.theme-scroll::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
 }

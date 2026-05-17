@@ -1,110 +1,7 @@
-import { useEffect, useRef, useState, useMemo, Component, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowDown, Heart, Sparkles } from "lucide-react";
 import { useI18n } from "../i18n";
 import { useSiteContent } from "../i18n";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Environment, Bounds, useBounds, PerformanceMonitor } from "@react-three/drei";
-import * as THREE from "three";
-
-class CanvasErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
-  state = { error: null };
-  static getDerivedStateFromError(e: Error) { return { error: e.message }; }
-  componentDidCatch(e: Error) { console.error("[CanvasErrorBoundary]", e); }
-  render() {
-    if (this.state.error) {
-      return (
-        <div style={{ color: "red", fontSize: 12, padding: 8, wordBreak: "break-all" }}>
-          3D Error: {this.state.error}
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-function AutoFit() {
-  const bounds = useBounds();
-  useEffect(() => { bounds.refresh().fit(); }, [bounds]);
-  return null;
-}
-
-// 缓慢自转，不依赖 OrbitControls autoRotate（避免持续 invalidate）
-function RotateModel({ children }: { children: React.ReactNode }) {
-  const ref = useRef<THREE.Group>(null);
-  useFrame((_, delta) => {
-    if (ref.current) ref.current.rotation.y += delta * 0.3;
-  });
-  return <group ref={ref}>{children}</group>;
-}
-
-function CharacterModel({ modelUrl, lowPerf }: { modelUrl: string; lowPerf: boolean }) {
-  const gltf = useGLTF(modelUrl);
-
-  // 场景只克隆一次，不随 lowPerf 变化重建
-  const scene = useMemo(() => {
-    const s = gltf.scene.clone(true);
-    s.updateWorldMatrix(true, true);
-    return s;
-  }, [gltf.scene]);
-
-  // 材质单独更新，不触发场景重建
-  useEffect(() => {
-    const BASE_MESHES = new Set(["立方体.002"]);
-    scene.traverse((child: any) => {
-      if (!child.isMesh) return;
-      child.frustumCulled = false;
-
-      if (BASE_MESHES.has(child.name)) {
-        if (lowPerf) {
-          child.material = new THREE.MeshPhysicalMaterial({
-            color: new THREE.Color(0.9, 0.95, 1.0),
-            metalness: 0.0,
-            roughness: 0.05,
-            transparent: true,
-            opacity: 0.45,
-            side: THREE.DoubleSide,
-            iridescence: 1.0,
-            iridescenceIOR: 2.0,
-            iridescenceThicknessRange: [150, 600] as [number, number],
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.02,
-            envMapIntensity: 2.5,
-          });
-        } else {
-          // 玻璃泡泡：高透射 + 强虹彩 + 清漆，接近参考图效果
-          child.material = new THREE.MeshPhysicalMaterial({
-            color: new THREE.Color(1, 1, 1),
-            metalness: 0.0,
-            roughness: 0.0,
-            transmission: 0.96,
-            thickness: 0.5,
-            ior: 1.33,
-            iridescence: 1.0,
-            iridescenceIOR: 2.2,
-            iridescenceThicknessRange: [150, 700] as [number, number],
-            transparent: true,
-            opacity: 1.0,
-            side: THREE.DoubleSide,
-            envMapIntensity: 4.0,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.0,
-            attenuationColor: new THREE.Color(0.9, 0.95, 1.0),
-            attenuationDistance: 3.0,
-          });
-        }
-      } else {
-        if (!child.userData.matPatched) {
-          child.material = child.material.clone();
-          child.material.envMapIntensity = 1.2;
-          child.material.needsUpdate = true;
-          child.userData.matPatched = true;
-        }
-      }
-    });
-  }, [scene, lowPerf]);
-
-  return <primitive object={scene} />;
-}
 
 const Hero = () => {
   const { lang } = useI18n();
@@ -114,20 +11,9 @@ const Hero = () => {
   const [displayed, setDisplayed] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [visible, setVisible] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const heroRef = useRef<HTMLElement>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
-  const lastRef = useRef({ x: 0, y: 0 });
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(128);
-  const [lowPerf, setLowPerf] = useState(true); // 默认低性能，PerformanceMonitor 检测到高性能后升级
-  const ipTitle = lang === "en" ? "3D Personal IP Avatar" : "3D 个人形象 IP";
-  const ipDesc =
-    lang === "en"
-      ? "Reserved area for a cute 3D animated avatar (can connect glTF / video / Lottie / Canvas later)."
-      : "这里预留用于放置可爱 3D 动态形象（后续可接入 glTF / 视频 / Lottie / Canvas）";
-  const ipReady = lang === "en" ? "Slot ready" : "展示位已准备";
 
   useEffect(() => {
     const word = WORDS[wordIndex];
@@ -160,93 +46,9 @@ const Hero = () => {
     }
   }, []);
 
-  // 粒子背景：降低粒子数量，降低帧率到 30fps
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-    type Particle = { x: number; y: number; vx: number; vy: number; r: number; alpha: number };
-    const particles: Particle[] = Array.from({ length: 30 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      r: Math.random() * 1.5 + 0.5,
-      alpha: Math.random() * 0.4 + 0.1,
-    }));
-    let raf = 0;
-    let lastT = 0;
-    const draw = (t: number) => {
-      raf = requestAnimationFrame(draw);
-      if (t - lastT < 33) return; // 限制 ~30fps
-      lastT = t;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach((p) => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(168, 85, 247, ${p.alpha})`;
-        ctx.fill();
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-      });
-    };
-    raf = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(raf);
-  }, []);
+  // 粒子背景已移除（只保留3D人物模型和泡泡椅）
 
-  useEffect(() => {
-    const heroEl = heroRef.current;
-    const gridEl = gridRef.current;
-    if (!heroEl || !gridEl) return;
-
-    const update = () => {
-      const { x, y } = lastRef.current;
-      const rect = heroEl.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const nx = rect.width ? (x - cx) / (rect.width / 2) : 0; // [-1..1]
-      const ny = rect.height ? (y - cy) / (rect.height / 2) : 0; // [-1..1]
-
-      const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
-      const px = clamp(nx, -1, 1);
-      const py = clamp(ny, -1, 1);
-
-      const tX = px * 16; // px
-      const tY = py * 10; // px
-      const rY = px * 6; // deg
-      const rX = -py * 6; // deg
-
-      gridEl.style.transform = `translate3d(${tX}px, ${tY}px, 0) rotateX(${rX}deg) rotateY(${rY}deg)`;
-      gridEl.style.backgroundPosition = `${tX * 0.9}px ${tY * 0.9}px, ${tX * 0.9}px ${tY * 0.9}px`;
-      gridEl.style.filter = `brightness(${1 + Math.abs(px) * 0.06 + Math.abs(py) * 0.06})`;
-
-      rafRef.current = null;
-    };
-
-    const onMove = (e: PointerEvent) => {
-      lastRef.current = { x: e.clientX, y: e.clientY };
-      if (rafRef.current == null) rafRef.current = requestAnimationFrame(update);
-    };
-
-    const onLeave = () => {
-      gridEl.style.transform = "translate3d(0,0,0) rotateX(0deg) rotateY(0deg)";
-      gridEl.style.backgroundPosition = "0px 0px, 0px 0px";
-      gridEl.style.filter = "none";
-    };
-
-    heroEl.addEventListener("pointermove", onMove);
-    heroEl.addEventListener("pointerleave", onLeave);
-    return () => {
-      heroEl.removeEventListener("pointermove", onMove);
-      heroEl.removeEventListener("pointerleave", onLeave);
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
+  // CSS网格鼠标交互已移除（只保留3D人物模型和泡泡椅）
 
   const toggleLike = () => {
     setLiked((v) => {
@@ -275,42 +77,11 @@ const Hero = () => {
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
       style={{ background: "var(--hero-bg)", transition: "background 420ms ease" }}
     >
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-60" />
+      {/* 粒子背景已移除 */}
 
-      <div
-        className="absolute rounded-full blur-3xl opacity-20 animate-float"
-        style={{
-          top: "25%",
-          left: "25%",
-          width: "380px",
-          height: "380px",
-          background: "radial-gradient(circle, var(--primary) 0%, transparent 70%)",
-        }}
-      />
-      <div
-        className="absolute rounded-full blur-3xl opacity-10 animate-float"
-        style={{
-          bottom: "25%",
-          right: "25%",
-          width: "320px",
-          height: "320px",
-          background: "radial-gradient(circle, var(--accent) 0%, transparent 70%)",
-          animationDelay: "2s",
-        }}
-      />
+      {/* 光晕背景已移除 */}
 
-      <div
-        ref={gridRef}
-        className="absolute inset-0 opacity-5"
-        style={{
-          backgroundImage:
-            "linear-gradient(var(--primary) 1px, transparent 1px), linear-gradient(90deg, var(--primary) 1px, transparent 1px)",
-          backgroundSize: "80px 80px",
-          transformStyle: "preserve-3d",
-          willChange: "transform, background-position, filter",
-          transition: "transform 160ms ease-out, background-position 160ms ease-out, filter 160ms ease-out",
-        }}
-      />
+      {/* 正方形网格背景已移除 */}
 
       <div
         className={`relative z-10 w-full transition-all duration-1000 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
@@ -477,58 +248,8 @@ const Hero = () => {
               ))}
             </div>
           </div>
-
-          <div className="flex-shrink-0 flex justify-center lg:justify-end" style={{ marginTop: "var(--space-6)", width: "min(480px, 100%)" }}>
-            <div
-              className="relative"
-              style={{
-                width: "100%",
-                aspectRatio: "1 / 1",
-                background: "transparent",
-              }}
-            >
-              <CanvasErrorBoundary>
-              <Canvas
-                camera={{ position: [0, 0, 5], fov: 40 }}
-                gl={{ antialias: true, alpha: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.3, powerPreference: "high-performance" }}
-                frameloop="always"
-                dpr={[1, 1.5]}
-                onCreated={({ gl }) => { gl.setClearColor(0x000000, 0); }}
-                style={{ width: "100%", height: "100%", position: "absolute", inset: 0, background: "transparent" }}
-              >
-                <PerformanceMonitor
-                  onDecline={() => setLowPerf(true)}
-                  onIncline={() => setLowPerf(false)}
-                  flipflops={5}
-                  factor={0.5}
-                />
-                <ambientLight intensity={0.5} color={"#f8f0ff"} />
-                <directionalLight position={[4, 6, 5]} intensity={2.0} color={"#fff0f8"} />
-                <directionalLight position={[-4, 2, -3]} intensity={1.5} color={"#c8b8ff"} />
-                <directionalLight position={[0, 2, -5]} intensity={1.2} color={"#80b0ff"} />
-                <directionalLight position={[0, -3, 2]} intensity={0.4} color={"#d0a8ff"} />
-                <pointLight position={[2.5, 3.5, 2]} intensity={3.5} color={"#ff88cc"} />
-                <pointLight position={[-2.5, 3.5, 2]} intensity={3.5} color={"#88ccff"} />
-                {!lowPerf && <Environment preset="studio" background={false} />}
-                <Bounds fit clip margin={1.1}>
-                  <AutoFit />
-                  <RotateModel>
-                    <CharacterModel modelUrl="/models/character_new.glb" lowPerf={lowPerf} />
-                  </RotateModel>
-                </Bounds>
-                <OrbitControls
-                  enableZoom={false}
-                  enablePan={false}
-                  autoRotate={false}
-                  minPolarAngle={Math.PI / 3}
-                  maxPolarAngle={Math.PI / 1.8}
-                />
-              </Canvas>
-              </CanvasErrorBoundary>
-            </div>
-          </div>
-        </div>
-      </div>
+	      </div>
+	    </div>
 
       <div className="pointer-events-none absolute top-28 left-0 right-0 hidden 2xl:block">
         <div

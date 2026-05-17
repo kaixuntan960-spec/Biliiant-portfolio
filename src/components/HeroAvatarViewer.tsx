@@ -1,23 +1,29 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import { Suspense, useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Html, OrbitControls, useGLTF } from "@react-three/drei";
 import {
-  AdditiveBlending,
+  ACESFilmicToneMapping,
   Box3,
-  BufferAttribute,
-  BufferGeometry,
-  CanvasTexture,
   Color,
-  DoubleSide,
   Group,
   Mesh,
-  MeshBasicMaterial,
   MeshStandardMaterial,
-  PointLight,
   Vector3,
 } from "three";
+import Matter from "matter-js";
 
-const MODEL_URL = "/models/house-final.glb";
+const MODEL_MAP: Record<string, string> = {
+  skills: "/models/pen_.glb",
+  life: "/models/cake_.glb",
+  honors: "/models/trophy.glb",
+  experience: "/models/bag.glb",
+  education: "/models/book_.glb",
+  works: "/models/movie_.glb",
+  contact: "/models/phone.glb",
+};
+
+// Preload all models
+Object.values(MODEL_MAP).forEach((url) => useGLTF.preload(url));
 
 // Add CSS animation for clicked label
 if (typeof document !== 'undefined') {
@@ -380,7 +386,7 @@ type HeroAvatarViewerProps = {
   calibrationEnabled?: boolean;
 };
 
-type TargetId = "experience" | "education" | "home" | "works" | "skills" | "contact" | "life";
+type TargetId = "experience" | "education" | "home" | "works" | "skills" | "contact" | "life" | "honors" | "about";
 
 type Interaction = {
   id: TargetId;
@@ -391,1018 +397,364 @@ type Interaction = {
 };
 
 const interactions: Interaction[] = [
-  { id: "experience", labelZh: "????", labelEn: "Experience", color: "#f3b08d", keywords: ["ladder", "??", "?"] },
-  { id: "education", labelZh: "????", labelEn: "Education", color: "#c98262", keywords: ["bag", "??", "?"] },
-  { id: "home", labelZh: "??", labelEn: "Home", color: "#f5cf7d", keywords: ["chair", "??", "?"] },
-  { id: "works", labelZh: "????", labelEn: "Works", color: "#7bb6d8", keywords: ["flower", "pot", "flowerpot", "plant", "??", "?", "?"] },
-  { id: "skills", labelZh: "??", labelEn: "Skills", color: "#8b9dc3", keywords: ["computer", "pc", "laptop", "??"] },
-  { id: "life", labelZh: "????", labelEn: "Life", color: "#f3a777", keywords: ["toy", "toys", "doll", "??"] },
-  { id: "contact", labelZh: "???", labelEn: "Contact", color: "#9ec99a", keywords: ["sign", "??", "??"] },
+  { id: "skills", labelZh: "技能", labelEn: "Skills", color: "#8b9dc3", keywords: [] },
+  { id: "life", labelZh: "个人生活", labelEn: "Life", color: "#f3a777", keywords: [] },
+  { id: "honors", labelZh: "个人荣誉", labelEn: "Honors", color: "#f5cf7d", keywords: [] },
+  { id: "experience", labelZh: "工作经历", labelEn: "Experience", color: "#f3b08d", keywords: [] },
+  { id: "education", labelZh: "教育经历", labelEn: "Education", color: "#c98262", keywords: [] },
+  { id: "works", labelZh: "精选作品", labelEn: "Works", color: "#7bb6d8", keywords: [] },
+  { id: "contact", labelZh: "联系我", labelEn: "Contact", color: "#9ec99a", keywords: [] },
 ];
 
 const LABELS: Record<TargetId, { zh: string; en: string }> = {
-  experience: { zh: "????", en: "Experience" },
-  education: { zh: "????", en: "Education" },
-  home: { zh: "??", en: "Home" },
-  works: { zh: "????", en: "Works" },
-  skills: { zh: "??", en: "Skills" },
-  life: { zh: "????", en: "Life" },
-  contact: { zh: "???", en: "Contact" },
+  experience: { zh: "工作经历", en: "Experience" },
+  education: { zh: "教育经历", en: "Education" },
+  home: { zh: "首页", en: "Home" },
+  works: { zh: "精选作品", en: "Works" },
+  skills: { zh: "技能", en: "Skills" },
+  life: { zh: "个人生活", en: "Life" },
+  contact: { zh: "联系我", en: "Contact" },
+  honors: { zh: "个人荣誉", en: "Honors" },
+  about: { zh: "关于我", en: "About" },
 };
 
-type InteractiveSpot = {
-  mesh: Mesh | null;
-  meshKey: string | null;
-  id: TargetId;
-  labelZh: string;
-  labelEn: string;
-  color: string;
-  position: [number, number, number];
-  hitCenter: [number, number, number];
-  hitRadius: number;
-};
+/*** Scattered 3D Models ***/
 
-const LIGHT_BASE = new Color("#f5f0e8");
-const LIGHT_SHADE = new Color("#e8dfd0");
-const DARK_BASE = new Color("#9ca3af");
-const DARK_SHADE = new Color("#6b7280");
-const BINDINGS_KEY = "hero_house_bindings_v1";
-const ANCHORS_KEY = "hero_house_anchors_v1";
+const TARGET_SCALE = 0.28;
 
-type ManualBindings = Partial<Record<TargetId, string>>;
-type ManualAnchors = Partial<Record<TargetId, [number, number, number]>>;
-const BINDING_FLOW: TargetId[] = ["home", "experience", "education", "works", "skills", "contact", "life"];
+/* ---- Matter.js physics world constants ---- */
+const PHY_HW = 1.8;   // half-width of the physics viewport
+const PHY_HH = 1.0;   // half-height
+const WALL_T = 0.4;
+const BODY_R = 0.15;  // circular-body radius for each model
 
-type LoosePartitionResult = {
-  parts: Partial<Record<TargetId, { geometry: BufferGeometry; center: [number, number, number] }>>;
-  staticGeometry: BufferGeometry;
-  componentCount: number;
-};
+function createPhysicsWorld() {
+  const engine = Matter.Engine.create({ gravity: { x: 0, y: 1.5 } });
 
-const sqr = (n: number) => n * n;
+  const wallOpts: Matter.IBodyDefinition = { isStatic: true, restitution: 0.5 };
+  const walls = [
+    Matter.Bodies.rectangle(0, PHY_HH + WALL_T / 2, PHY_HW * 2 + WALL_T * 2, WALL_T, wallOpts),
+    Matter.Bodies.rectangle(0, -PHY_HH - WALL_T / 2, PHY_HW * 2 + WALL_T * 2, WALL_T, wallOpts),
+    Matter.Bodies.rectangle(-PHY_HW - WALL_T / 2, 0, WALL_T, PHY_HH * 2 + WALL_T * 2, wallOpts),
+    Matter.Bodies.rectangle(PHY_HW + WALL_T / 2, 0, WALL_T, PHY_HH * 2 + WALL_T * 2, wallOpts),
+  ];
 
-const defaultRadiusFactor: Record<TargetId, number> = {
-  home: 0.085,
-  experience: 0.11,
-  education: 0.095,
-  works: 0.11,
-  skills: 0.11,
-  contact: 0.095,
-  life: 0.15,
-};
-
-const buildSubsetGeometry = (src: BufferGeometry, subsetIndices: Uint32Array) => {
-  const posAttr = src.getAttribute("position");
-  if (!posAttr) throw new Error("Missing position attribute.");
-  const srcPos = posAttr.array as Float32Array;
-  const srcNormalAttr = src.getAttribute("normal");
-  const srcUvAttr = src.getAttribute("uv");
-  const srcNormal = srcNormalAttr ? (srcNormalAttr.array as Float32Array) : null;
-  const srcUv = srcUvAttr ? (srcUvAttr.array as Float32Array) : null;
-
-  const vertexCount = posAttr.count;
-  const remap = new Int32Array(vertexCount);
-  remap.fill(-1);
-  const oldForNew: number[] = [];
-
-  for (let i = 0; i < subsetIndices.length; i++) {
-    const oldIdx = subsetIndices[i];
-    if (remap[oldIdx] !== -1) continue;
-    remap[oldIdx] = oldForNew.length;
-    oldForNew.push(oldIdx);
-  }
-
-  const newVertexCount = oldForNew.length;
-  const newPos = new Float32Array(newVertexCount * 3);
-  const newNormal = srcNormal ? new Float32Array(newVertexCount * 3) : null;
-  const newUv = srcUv ? new Float32Array(newVertexCount * 2) : null;
-
-  for (let newIdx = 0; newIdx < newVertexCount; newIdx++) {
-    const oldIdx = oldForNew[newIdx];
-    const p0 = oldIdx * 3;
-    const np0 = newIdx * 3;
-    newPos[np0] = srcPos[p0];
-    newPos[np0 + 1] = srcPos[p0 + 1];
-    newPos[np0 + 2] = srcPos[p0 + 2];
-    if (newNormal && srcNormal) {
-      newNormal[np0] = srcNormal[p0];
-      newNormal[np0 + 1] = srcNormal[p0 + 1];
-      newNormal[np0 + 2] = srcNormal[p0 + 2];
-    }
-    if (newUv && srcUv) {
-      const u0 = oldIdx * 2;
-      const nu0 = newIdx * 2;
-      newUv[nu0] = srcUv[u0];
-      newUv[nu0 + 1] = srcUv[u0 + 1];
-    }
-  }
-
-  const newIndex = newVertexCount <= 65535 ? new Uint16Array(subsetIndices.length) : new Uint32Array(subsetIndices.length);
-  for (let i = 0; i < subsetIndices.length; i++) {
-    newIndex[i] = remap[subsetIndices[i]];
-  }
-
-  const g = new BufferGeometry();
-  g.setAttribute("position", new BufferAttribute(newPos, 3));
-  if (newNormal) g.setAttribute("normal", new BufferAttribute(newNormal, 3));
-  if (newUv) g.setAttribute("uv", new BufferAttribute(newUv, 2));
-  g.setIndex(new BufferAttribute(newIndex, 1));
-  if (!newNormal) g.computeVertexNormals();
-  g.computeBoundingBox();
-  g.computeBoundingSphere();
-  return g;
-};
-
-const partitionLooseParts = (
-  src: BufferGeometry,
-  anchors: Record<TargetId, [number, number, number]>,
-  diag: number,
-): LoosePartitionResult => {
-  const ids = interactions.map((i) => i.id);
-  const posAttr = src.getAttribute("position");
-  if (!posAttr) throw new Error("Missing position attribute.");
-  const position = posAttr.array as Float32Array;
-
-  const vertexCount = posAttr.count;
-  let indexAttr = src.getIndex();
-  if (!indexAttr) {
-    const idx = new (vertexCount <= 65535 ? Uint16Array : Uint32Array)(vertexCount);
-    for (let i = 0; i < vertexCount; i++) idx[i] = i;
-    src.setIndex(new BufferAttribute(idx, 1));
-    indexAttr = src.getIndex();
-  }
-  const index = indexAttr!.array as Uint32Array | Uint16Array;
-  const triCount = Math.floor(index.length / 3);
-
-  const parent = new Int32Array(vertexCount);
-  const rank = new Uint8Array(vertexCount);
-  for (let i = 0; i < vertexCount; i++) parent[i] = i;
-
-  const find = (x0: number) => {
-    let x = x0;
-    let p = parent[x];
-    while (p !== parent[p]) p = parent[p];
-    while (x !== p) {
-      const n = parent[x];
-      parent[x] = p;
-      x = n;
-    }
-    return p;
+  const bodyOpts: Matter.IBodyDefinition = {
+    restitution: 0.6,
+    friction: 0.3,
+    frictionAir: 0.015,
+    density: 0.002,
   };
 
-  const union = (a: number, b: number) => {
-    let ra = find(a);
-    let rb = find(b);
-    if (ra === rb) return;
-    const rka = rank[ra];
-    const rkb = rank[rb];
-    if (rka < rkb) parent[ra] = rb;
-    else if (rka > rkb) parent[rb] = ra;
-    else {
-      parent[rb] = ra;
-      rank[ra] = rka + 1;
-    }
+  const bodies = interactions.map(() => {
+    const x = (Math.random() - 0.5) * PHY_HW * 1.4;
+    const y = -PHY_HH - 0.6 - Math.random() * 0.8; // start above viewport
+    const body = Matter.Bodies.circle(x, y, BODY_R, bodyOpts);
+    Matter.Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.1);
+    return body;
+  });
+
+  Matter.World.add(engine.world, [...walls, ...bodies]);
+
+  const upImpulse = (id: TargetId) => {
+    const idx = interactions.findIndex((i) => i.id === id);
+    if (idx === -1) return;
+    const b = bodies[idx];
+    Matter.Body.applyForce(b, b.position, {
+      x: (Math.random() - 0.5) * 0.004,
+      y: -0.025,
+    });
   };
 
-  for (let i = 0; i < index.length; i += 3) {
-    const a = index[i];
-    const b = index[i + 1];
-    const c = index[i + 2];
-    union(a, b);
-    union(a, c);
-  }
+  return { engine, bodies, walls, upImpulse };
+}
 
-  const compIndexByRoot = new globalThis.Map<number, number>();
-  const triComp = new Uint32Array(triCount);
-  const sumX: number[] = [];
-  const sumY: number[] = [];
-  const sumZ: number[] = [];
-  const sumCount: number[] = [];
+/* ---- ScatteredModel — renders one GLB, driven by physics transforms ---- */
 
-  for (let t = 0; t < triCount; t++) {
-    const i0 = index[t * 3];
-    const i1 = index[t * 3 + 1];
-    const i2 = index[t * 3 + 2];
-    const root = find(i0);
-    let ci = compIndexByRoot.get(root);
-    if (ci === undefined) {
-      ci = sumCount.length;
-      compIndexByRoot.set(root, ci);
-      sumX.push(0);
-      sumY.push(0);
-      sumZ.push(0);
-      sumCount.push(0);
-    }
-    triComp[t] = ci;
-
-    const p0 = i0 * 3;
-    const p1 = i1 * 3;
-    const p2 = i2 * 3;
-    sumX[ci] += (position[p0] + position[p1] + position[p2]) / 3;
-    sumY[ci] += (position[p0 + 1] + position[p1 + 1] + position[p2 + 1]) / 3;
-    sumZ[ci] += (position[p0 + 2] + position[p1 + 2] + position[p2 + 2]) / 3;
-    sumCount[ci] += 1;
-  }
-
-  const compCount = sumCount.length;
-  const centroidX = new Float32Array(compCount);
-  const centroidY = new Float32Array(compCount);
-  const centroidZ = new Float32Array(compCount);
-  for (let ci = 0; ci < compCount; ci++) {
-    const c = Math.max(1, sumCount[ci]);
-    centroidX[ci] = sumX[ci] / c;
-    centroidY[ci] = sumY[ci] / c;
-    centroidZ[ci] = sumZ[ci] / c;
-  }
-
-  const radius: Record<TargetId, number> = {
-    home: diag * defaultRadiusFactor.home,
-    experience: diag * defaultRadiusFactor.experience,
-    education: diag * defaultRadiusFactor.education,
-    works: diag * defaultRadiusFactor.works,
-    skills: diag * defaultRadiusFactor.skills,
-    contact: diag * defaultRadiusFactor.contact,
-    life: diag * defaultRadiusFactor.life,
-  };
-  const radius2: Record<TargetId, number> = {
-    home: sqr(radius.home),
-    experience: sqr(radius.experience),
-    education: sqr(radius.education),
-    works: sqr(radius.works),
-    skills: sqr(radius.skills),
-    contact: sqr(radius.contact),
-    life: sqr(radius.life),
-  };
-
-  const compToGroup = new Int16Array(compCount);
-  compToGroup.fill(-1);
-
-  for (let ci = 0; ci < compCount; ci++) {
-    const cx = centroidX[ci];
-    const cy = centroidY[ci];
-    const cz = centroidZ[ci];
-    let best = -1;
-    let bestD = Number.POSITIVE_INFINITY;
-    for (let gi = 0; gi < ids.length; gi++) {
-      const id = ids[gi];
-      const a = anchors[id];
-      const dx = cx - a[0];
-      const dy = cy - a[1];
-      const dz = cz - a[2];
-      const d2 = dx * dx + dy * dy + dz * dz;
-      if (d2 > radius2[id]) continue;
-      if (d2 < bestD) {
-        bestD = d2;
-        best = gi;
-      }
-    }
-    compToGroup[ci] = best;
-  }
-
-  const staticGroup = ids.length;
-  const counts = new Uint32Array(ids.length + 1);
-  for (let t = 0; t < triCount; t++) {
-    const ci = triComp[t];
-    const g = compToGroup[ci] >= 0 ? compToGroup[ci] : staticGroup;
-    counts[g] += 3;
-  }
-
-  const groups: Uint32Array[] = [];
-  for (let gi = 0; gi < counts.length; gi++) groups.push(new Uint32Array(counts[gi]));
-  const write = new Uint32Array(counts.length);
-
-  for (let t = 0; t < triCount; t++) {
-    const ci = triComp[t];
-    const g = compToGroup[ci] >= 0 ? compToGroup[ci] : staticGroup;
-    const w = write[g];
-    groups[g][w] = index[t * 3];
-    groups[g][w + 1] = index[t * 3 + 1];
-    groups[g][w + 2] = index[t * 3 + 2];
-    write[g] = w + 3;
-  }
-
-  const parts: Partial<Record<TargetId, { geometry: BufferGeometry; center: [number, number, number] }>> = {};
-  for (let gi = 0; gi < ids.length; gi++) {
-    if (groups[gi].length === 0) continue;
-    const g = buildSubsetGeometry(src, groups[gi]);
-    g.computeBoundingBox();
-    const bb = g.boundingBox;
-    if (bb) {
-      const center = new Vector3();
-      bb.getCenter(center);
-      g.translate(-center.x, -center.y, -center.z);
-      g.computeBoundingBox();
-      g.computeBoundingSphere();
-      parts[ids[gi]] = { geometry: g, center: [center.x, center.y, center.z] };
-    } else {
-      parts[ids[gi]] = { geometry: g, center: [0, 0, 0] };
-    }
-  }
-
-  const staticGeometry = groups[staticGroup].length ? buildSubsetGeometry(src, groups[staticGroup]) : new BufferGeometry();
-
-  return { parts, staticGeometry, componentCount: compCount };
-};
-
-const HouseModelMultiMesh = ({
+const ScatteredModel = ({
+  modelUrl,
+  targetId,
+  lang,
   onNavigate,
-  lang = "zh",
-  onHoverLabelChange,
-  theme = "light",
-  calibrationEnabled = false,
-}: HeroAvatarViewerProps) => {
-  const gltf = useGLTF(MODEL_URL);
-  const sceneTemplate = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [hoveredMeshKey, setHoveredMeshKey] = useState<string | null>(null); // Track specific mesh being hovered
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [clickedLabel, setClickedLabel] = useState<{ label: string; position: [number, number, number] } | null>(null);
-  const spotsRef = useRef<InteractiveSpot[]>([]);
-  const [calibrationTarget, setCalibrationTarget] = useState<TargetId>("experience");
-  const [manualBindings, setManualBindings] = useState<ManualBindings>({});
-  const [lastHitName, setLastHitName] = useState("");
-  const [bindingStep, setBindingStep] = useState(0);
-  const [bindSuccessTarget, setBindSuccessTarget] = useState<TargetId | null>(null);
-  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
-  const pointerMovedRef = useRef(false);
+  hoveredId,
+  setHoveredId,
+  clickedLabel,
+  setClickedLabel,
+  onRegisterGroup,
+  onPhysicsClick,
+}: {
+  modelUrl: string;
+  targetId: TargetId;
+  lang: "zh" | "en";
+  onNavigate?: (targetId: string) => void;
+  hoveredId: string | null;
+  setHoveredId: (id: string | null) => void;
+  clickedLabel: { id: TargetId; label: string } | null;
+  setClickedLabel: (v: { id: TargetId; label: string } | null) => void;
+  onRegisterGroup: (id: TargetId, g: Group) => void;
+  onPhysicsClick: (id: TargetId) => void;
+}) => {
+  const gltf = useGLTF(modelUrl);
+  const groupRef = useRef<Group>(null);
+  const invalidate = useThree((st) => st.invalidate);
+  const meshRefs = useRef<Mesh[]>([]);
+  const isBook = targetId === "education";
+  const springRef = useRef({ scale: 1, vel: 0 });
+  const navigateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Register group ref so parent can sync physics transforms
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(BINDINGS_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as ManualBindings;
-      setManualBindings(parsed);
-    } catch {
-      // ignore corrupted data
-    }
-  }, []);
+    if (groupRef.current) onRegisterGroup(targetId, groupRef.current);
+    return () => onRegisterGroup(targetId, null as unknown as Group);
+  }, [targetId, onRegisterGroup]);
 
-  const saveBindings = (next: ManualBindings) => {
-    setManualBindings(next);
-    try {
-      localStorage.setItem(BINDINGS_KEY, JSON.stringify(next));
-    } catch {
-      // ignore
-    }
-  };
-
-  useEffect(() => {
-    if (!calibrationEnabled) return;
-    const nextTarget = BINDING_FLOW[Math.min(bindingStep, BINDING_FLOW.length - 1)];
-    setCalibrationTarget(nextTarget);
-  }, [bindingStep, calibrationEnabled]);
-
-  useEffect(() => {
-    if (!calibrationEnabled) return;
-    const firstMissing = BINDING_FLOW.findIndex((id) => !manualBindings[id]);
-    setBindingStep(firstMissing === -1 ? BINDING_FLOW.length : firstMissing);
-  }, [calibrationEnabled, manualBindings]);
-
-  const { normalizedScene, spots, hoverScene } = useMemo(() => {
-    const scene = sceneTemplate.clone(true);
-    const box = new Box3().setFromObject(scene);
+  const scene = useMemo(() => {
+    const cloned = gltf.scene.clone(true);
+    const box = new Box3().setFromObject(cloned);
     const center = new Vector3();
     const size = new Vector3();
     box.getCenter(center);
     box.getSize(size);
-    scene.position.set(-center.x, -center.y, -center.z);
-
-    const meshEntries: Array<{ mesh: Mesh; key: string; name: string; names: string[]; volume: number; center: Vector3; topY: number }> = [];
-    const clayBase = theme === "dark" ? new Color("#9ca3af") : new Color("#f5f0e8");
-    const clayHover = theme === "dark" ? new Color("#d1d5db") : new Color("#fffbf5");
-
-    scene.traverse((obj) => {
+    const diag = Math.max(size.x, size.y, size.z);
+    const scale = diag > 0 ? TARGET_SCALE / diag : 1;
+    cloned.scale.setScalar(scale);
+    cloned.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+    meshRefs.current = [];
+    cloned.traverse((obj) => {
       const mesh = obj as Mesh;
       if (!mesh.isMesh) return;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      mesh.visible = true; // Ensure all meshes are visible by default
-
-      const key = `${mesh.uuid}:${mesh.name ?? ""}:${mesh.parent?.name ?? ""}`;
-      mesh.userData.__spotKey = key;
-
-      const names = new Set<string>();
-      let ancestor: any = mesh;
-      while (ancestor) {
-        if (typeof ancestor.name === "string" && ancestor.name.trim()) {
-          names.add(ancestor.name.toLowerCase().trim());
-        }
-        ancestor = ancestor.parent;
-      }
-      const n = [...names].join(" ");
-
-      // Ignore original texture materials: keep a clean clay render like plantpot.
-      const baseMat = new MeshStandardMaterial({
-        color: clayBase.clone(),
-        roughness: 0.95,
-        metalness: 0.0,
-        emissive: new Color("#000000"),
-        emissiveIntensity: 0,
-        side: DoubleSide,
-        flatShading: false,
-        envMapIntensity: 0.0, // Disable environment map reflection completely
-      });
-      // Used for hiding the base mesh while still allowing raycast hits.
-      baseMat.userData.__isBaseClay = true;
-      mesh.material = baseMat;
-
-      console.log("[HouseModelMultiMesh] Mesh setup:", mesh.name, "visible:", mesh.visible, "color:", baseMat.color.getHexString());
-
-      const meshBox = new Box3().setFromObject(mesh);
-      const meshSize = new Vector3();
-      const meshCenter = new Vector3();
-      meshBox.getSize(meshSize);
-      meshBox.getCenter(meshCenter);
-      const volume = Math.max(0.00001, meshSize.x * meshSize.y * meshSize.z);
-      meshEntries.push({ mesh, key, name: n, volume, center: meshCenter, topY: meshBox.max.y, names: [...names] });
-    });
-
-    // Some exports contain an outer "container" cube/box around the whole model.
-    // Hide the largest mesh if it looks like that container, so the house itself remains visible.
-    const allByVolume = [...meshEntries].sort((a, b) => b.volume - a.volume);
-    const largestMesh = allByVolume[0];
-    const secondMesh = allByVolume[1];
-    if (largestMesh?.mesh && secondMesh?.mesh) {
-      const ratio = secondMesh ? largestMesh.volume / Math.max(0.00001, secondMesh.volume) : Number.POSITIVE_INFINITY;
-      const nameHint = /bounds|bound|collider|collision|proxy|box|cube|frame|helper/.test(largestMesh.name);
-      // More conservative: only hide if there's a very strong signal it's a container
-      // Increased threshold to avoid hiding actual model parts
-      if ((nameHint && ratio >= 8) || ratio >= 15) {
-        largestMesh.mesh.visible = false;
-        console.log("[HouseModelMultiMesh] Hiding container mesh:", largestMesh.mesh.name, "ratio:", ratio);
-      }
-    }
-
-    const used = new Set<string>();
-    const orderedMeshes = meshEntries
-      .filter((item) => item.center.y > 0.03)
-      .sort((a, b) => b.volume - a.volume);
-    const largestVolume = orderedMeshes[0]?.volume ?? 1;
-    const clickCandidates = orderedMeshes.filter((item) => item.volume < largestVolume * 0.18 && item.volume > largestVolume * 0.0005);
-
-    const fallbackAnchors = [
-      new Vector3(-size.x * 0.18, size.y * 0.23, size.z * 0.32), // ladder -> experience
-      new Vector3(size.x * 0.29, size.y * 0.2, size.z * 0.26), // bag -> education
-      new Vector3(-size.x * 0.32, size.y * 0.11, size.z * 0.35), // chair -> home
-      new Vector3(-size.x * 0.08, size.y * 0.16, size.z * 0.25), // flower pot -> works
-      new Vector3(size.x * 0.22, size.y * 0.2, size.z * 0.3), // computer -> skills
-      new Vector3(-size.x * 0.21, size.y * 0.2, size.z * 0.23), // sign -> contact
-      new Vector3(size.x * 0.02, size.y * 0.42, -size.z * 0.06), // toy/life
-    ];
-
-    const spots: InteractiveSpot[] = [];
-
-    interactions.forEach((rule, idx) => {
-      const manualName = manualBindings[rule.id]?.toLowerCase?.() ?? "";
-
-      // Find all meshes that match this rule (not just one)
-      const matchingMeshes: typeof meshEntries = [];
-
-      if (manualName) {
-        // Manual binding: find all meshes with matching names
-        matchingMeshes.push(
-          ...meshEntries.filter(
-            (item) => !used.has(item.mesh.uuid) && item.names.some((name) => name.includes(manualName))
-          )
-        );
-      }
-
-      if (matchingMeshes.length === 0) {
-        // Keyword exact match: find all meshes with exact keyword match
-        matchingMeshes.push(
-          ...meshEntries.filter(
-            (item) =>
-              !used.has(item.mesh.uuid) &&
-              (item.names.includes(rule.id) || rule.keywords.some((word) => item.names.includes(word)))
-          )
-        );
-      }
-
-      if (matchingMeshes.length === 0) {
-        // Keyword loose match: find all meshes with partial keyword match
-        matchingMeshes.push(
-          ...meshEntries.filter(
-            (item) =>
-              !used.has(item.mesh.uuid) &&
-              (item.names.includes(rule.id) || rule.keywords.some((word) => item.names.some((name) => name.includes(word))))
-          )
-        );
-      }
-
-      const anchor = fallbackAnchors[idx];
-
-      if (matchingMeshes.length === 0) {
-        // Fallback: find closest candidate
-        const fallback = clickCandidates
-          .filter((item) => !used.has(item.mesh.uuid))
-          .sort((a, b) => a.center.distanceTo(anchor) - b.center.distanceTo(anchor))[0];
-        const backupUnique = orderedMeshes
-          .filter((item) => !used.has(item.mesh.uuid))
-          .sort((a, b) => a.center.distanceTo(anchor) - b.center.distanceTo(anchor))[0];
-        const chosen = fallback ?? backupUnique;
-        if (chosen) matchingMeshes.push(chosen);
-      }
-
-      // Create a spot for each matching mesh
-      matchingMeshes.forEach((chosen) => {
-        used.add(chosen.mesh.uuid);
-
-        // Special handling for flower_pot: split into 2 virtual spots (left and right)
-        const meshName = chosen.mesh.name.toLowerCase();
-        if ((meshName.includes('flower') || meshName.includes('pot')) && rule.id === 'works') {
-          // Get mesh bounding box to determine split positions
-          const bbox = new Box3().setFromObject(chosen.mesh);
-          const center = new Vector3();
-          bbox.getCenter(center);
-          const size = new Vector3();
-          bbox.getSize(size);
-
-          // Create two spots: left and right
-          const offset = size.x * 0.25; // 25% of width from center
-
-          // Left pot
-          spots.push({
-            mesh: chosen.mesh,
-            meshKey: `${chosen.key}_left`,
-            id: rule.id,
-            labelZh: rule.labelZh,
-            labelEn: rule.labelEn,
-            color: rule.color,
-            position: [center.x - offset, chosen.topY + 0.08, center.z],
-            hitCenter: [center.x - offset, center.y, center.z],
-            hitRadius: 0.15,
-          });
-
-          // Right pot
-          spots.push({
-            mesh: chosen.mesh,
-            meshKey: `${chosen.key}_right`,
-            id: rule.id,
-            labelZh: rule.labelZh,
-            labelEn: rule.labelEn,
-            color: rule.color,
-            position: [center.x + offset, chosen.topY + 0.08, center.z],
-            hitCenter: [center.x + offset, center.y, center.z],
-            hitRadius: 0.15,
-          });
-
-          console.log(`[Debug] Split flower_pot into 2 virtual spots at x: ${center.x - offset} and ${center.x + offset}`);
-        } else {
-          // Normal single spot
-          spots.push({
-            mesh: chosen.mesh,
-            meshKey: chosen.key,
-            id: rule.id,
-            labelZh: rule.labelZh,
-            labelEn: rule.labelEn,
-            color: rule.color,
-            position: [chosen.center.x, chosen.topY + 0.08, chosen.center.z],
-            hitCenter: [chosen.center.x, chosen.center.y, chosen.center.z],
-            hitRadius: 0.15,
-          });
-        }
-      });
-
-      // If no meshes were found, create a fallback spot at the anchor position
-      if (matchingMeshes.length === 0) {
-        spots.push({
-          mesh: null,
-          meshKey: null,
-          id: rule.id,
-          labelZh: rule.labelZh,
-          labelEn: rule.labelEn,
-          color: rule.color,
-          position: [anchor.x, anchor.y, anchor.z],
-          hitCenter: [anchor.x, anchor.y, anchor.z],
-          hitRadius: 0.15,
+      meshRefs.current.push(mesh);
+      const origMat = mesh.material as MeshStandardMaterial;
+      if (isBook) {
+        mesh.material = new MeshStandardMaterial({
+          color: new Color("#ffffff"),
+          roughness: 0.8,
+          metalness: 0.0,
+          envMapIntensity: 0.0,
+        });
+      } else {
+        mesh.material = new MeshStandardMaterial({
+          color: origMat.color || new Color("#f0e8d8"),
+          map: origMat.map || undefined,
+          roughness: 0.6,
+          metalness: 0.0,
+          envMapIntensity: 0.0,
         });
       }
-
-      // Debug: log how many meshes were found for this rule
-      console.log(`[Spots] ${rule.id} (${rule.labelEn}): found ${matchingMeshes.length} meshes`);
-
-      // Debug: for works, show all mesh names that contain flower or pot
-      if (rule.id === 'works') {
-        const allMeshNames: string[] = [];
-        scene.traverse((obj) => {
-          if ((obj as Mesh).isMesh) {
-            const name = obj.name.toLowerCase();
-            if (name.includes('flower') || name.includes('pot')) {
-              allMeshNames.push(obj.name);
-            }
-          }
-        });
-        console.log(`[Debug] All meshes with 'flower' or 'pot' in name:`, allMeshNames);
-        console.log(`[Debug] Total spots created for works:`, spots.filter(s => s.id === 'works').length);
-        console.log(`[Debug] Works spots details:`, spots.filter(s => s.id === 'works').map(s => ({
-          meshKey: s.meshKey,
-          position: s.position
-        })));
-      }
     });
+    cloned.updateMatrixWorld(true);
+    return cloned;
+  }, [gltf.scene, isBook]);
 
-    const overlay = scene.clone(true) as Group;
-    overlay.traverse((obj) => {
-      const mesh = obj as Mesh;
-      if (!mesh.isMesh) return;
-      // Never let the overlay steal pointer hits.
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      (mesh as unknown as { raycast: () => void }).raycast = () => {};
-      mesh.castShadow = true;
-      mesh.receiveShadow = false;
-      mesh.visible = false;
-      const hoverMat = new MeshStandardMaterial({
-        color: (theme === "dark" ? new Color("#fef3c7") : new Color("#fffef9")).clone(),
-        roughness: 0.85,
-        metalness: 0.0,
-        emissive: (theme === "dark" ? new Color("#fbbf24") : new Color("#fef3c7")).clone(),
-        emissiveIntensity: theme === "dark" ? 0.15 : 0.18,
-        side: DoubleSide,
-        flatShading: false,
-        envMapIntensity: 0.0,
-        depthWrite: false,
-        polygonOffset: true,
-        polygonOffsetFactor: -2,
-        polygonOffsetUnits: -2,
-      });
-      mesh.material = hoverMat;
-      mesh.renderOrder = 2;
-    });
-
-    return { normalizedScene: scene, spots, hoverScene: overlay };
-  }, [sceneTemplate, manualBindings, theme]);
-  useEffect(() => {
-    spotsRef.current = spots;
-  }, [spots]);
-
-  const hoverMeshById = useMemo(() => {
-    const keyToMesh = new globalThis.Map<string, Mesh>();
-    hoverScene.traverse((obj) => {
-      const mesh = obj as Mesh;
-      if (!mesh.isMesh) return;
-      const key = (mesh.userData as any)?.__spotKey;
-      if (typeof key === "string") keyToMesh.set(key, mesh);
-    });
-    // Map each spot to its hover mesh
-    // For virtual spots (like flower_pot_left/right), they share the same physical mesh
-    const map = new globalThis.Map<string, Mesh>();
-    spots.forEach((spot) => {
-      if (!spot.meshKey) return;
-      // Extract base key (remove _left/_right suffix)
-      const baseKey = spot.meshKey.replace(/_left$|_right$/, '');
-      const m = keyToMesh.get(baseKey);
-      if (m) map.set(spot.meshKey, m);
-    });
-    return map;
-  }, [hoverScene, spots]);
-
-  const baseMeshById = useMemo(() => {
-    const keyToMesh = new globalThis.Map<string, Mesh>();
-    normalizedScene.traverse((obj) => {
-      const mesh = obj as Mesh;
-      if (!mesh.isMesh) return;
-      const key = (mesh.userData as any)?.__spotKey;
-      if (typeof key === "string") keyToMesh.set(key, mesh);
-    });
-    // Map each spot to its base mesh
-    // For virtual spots (like flower_pot_left/right), they share the same physical mesh
-    const map = new globalThis.Map<string, Mesh>();
-    spots.forEach((spot) => {
-      if (!spot.meshKey) return;
-      // Extract base key (remove _left/_right suffix)
-      const baseKey = spot.meshKey.replace(/_left$|_right$/, '');
-      const m = keyToMesh.get(baseKey);
-      if (m) map.set(spot.meshKey, m);
-    });
-    return map;
-  }, [normalizedScene, spots]);
+  const isHovered = hoveredId === targetId;
 
   useEffect(() => {
-    document.body.style.cursor = hoveredId ? "pointer" : "";
-    const hoverSpot = spots.find((s) => s.id === hoveredId) ?? null;
-    onHoverLabelChange?.(hoverSpot ? (lang === "en" ? `Go to ${hoverSpot.labelEn}` : `åæ¢å?{hoverSpot.labelZh}`) : null);
-    return () => {
-      document.body.style.cursor = "";
-      onHoverLabelChange?.(null);
-    };
-  }, [hoveredId, lang, onHoverLabelChange, spots]);
+    return () => { if (navigateTimerRef.current) clearTimeout(navigateTimerRef.current); };
+  }, []);
 
-  // Store original scales for each mesh
-  const originalScalesRef = useRef(new globalThis.Map<string, Vector3>());
-  const hoverScaleRef = useRef(new Vector3(1, 1, 1));
+  useFrame((_, delta) => {
+    const dt = Math.min(delta, 0.05);
+    if (!groupRef.current) return;
+    // Spring animation
+    const sp = springRef.current;
+    const k = 22, d = 5.5;
+    const f = (1 - sp.scale) * k - sp.vel * d;
+    sp.vel += f * dt;
+    sp.scale += sp.vel * dt;
+    groupRef.current.scale.setScalar(sp.scale);
 
-  useFrame(() => {
-    // Keep hover overlay aligned with the base mesh to avoid double-image artifacts when zooming.
-    // The hover overlay material uses polygonOffset so it can draw cleanly on top of the base surface.
-    const targetScaleMultiplier = 1.0;
-    // Iterate through all spots (not just interactions) to handle each mesh independently
-    spots.forEach((spot) => {
-      if (!spot.meshKey) return;
-
-      const mesh = hoverMeshById.get(spot.meshKey);
-      const baseMesh = baseMeshById.get(spot.meshKey);
-      // Check if THIS specific mesh is hovered (not just the ID group)
-      const isHovered = hoveredMeshKey === spot.meshKey;
-
-      if (baseMesh) {
-        baseMesh.castShadow = true;
-        baseMesh.receiveShadow = true;
-        baseMesh.visible = true;
-      }
-
-      if (mesh) {
-        // Save original scale on first encounter
-        if (!originalScalesRef.current.has(spot.meshKey)) {
-          originalScalesRef.current.set(spot.meshKey, mesh.scale.clone());
-        }
-
-        const originalScale = originalScalesRef.current.get(spot.meshKey)!;
-        mesh.visible = isHovered;
-        mesh.castShadow = isHovered;
-
-        // Scale relative to original size
-        if (isHovered) {
-          hoverScaleRef.current.set(
-            originalScale.x * targetScaleMultiplier,
-            originalScale.y * targetScaleMultiplier,
-            originalScale.z * targetScaleMultiplier
-          );
-        } else {
-          hoverScaleRef.current.copy(originalScale);
-        }
-        mesh.scale.lerp(hoverScaleRef.current, 0.38);
+    // Hover glow
+    meshRefs.current.forEach((mesh) => {
+      const mat = mesh.material as MeshStandardMaterial;
+      if (isHovered) {
+        mat.emissive = new Color("#fbbf24");
+        mat.emissiveIntensity = 0.3;
+      } else {
+        mat.emissive = new Color("#000000");
+        mat.emissiveIntensity = 0;
       }
     });
+    invalidate();
   });
 
-  const meshToSpot = useMemo(() => {
-    const map = new globalThis.Map<string, InteractiveSpot>();
-    spots.forEach((spot) => {
-      if (!spot.mesh) return;
-      // Keep first binding to avoid later slots (e.g. life) overriding the same mesh.
-      if (!map.has(spot.mesh.uuid)) map.set(spot.mesh.uuid, spot);
-    });
-    return map;
-  }, [spots]);
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    springRef.current.vel = -2.5;          // visual bounce
+    onPhysicsClick(targetId);              // physics impulse
 
-  const resolveSpotByObject = (obj: Mesh | null): InteractiveSpot | null => {
-    if (!obj) return null;
-    let cursor: Mesh | null = obj;
-    while (cursor) {
-      const spot = meshToSpot.get(cursor.uuid);
-      if (spot) return spot;
-      cursor = (cursor.parent as Mesh | null) ?? null;
-    }
-    return null;
+    if (navigateTimerRef.current) clearTimeout(navigateTimerRef.current);
+    navigateTimerRef.current = setTimeout(() => {
+      const labelText = LABELS[targetId]?.[lang] || targetId;
+      setClickedLabel({ id: targetId, label: labelText });
+      setTimeout(() => setClickedLabel(null), 2000);
+      onNavigate?.(targetId);
+    }, 280);
   };
 
-  const resolveSpot = (e: ThreeEvent<PointerEvent | MouseEvent>) => {
-    const hit = e.object as Mesh;
-    const direct = resolveSpotByObject(hit);
+  return (
+    <group
+      ref={groupRef}
+      onClick={handleClick}
+      onPointerEnter={(e) => {
+        e.stopPropagation();
+        setHoveredId(targetId);
+        document.body.style.cursor = "pointer";
+      }}
+      onPointerLeave={() => {
+        setHoveredId(null);
+        document.body.style.cursor = "";
+      }}
+    >
+      <primitive object={scene} />
+    </group>
+  );
+};
 
-    // For meshes that need position-based splitting (like flower_pot with 2 pots)
-    if (direct && direct.mesh) {
-      const meshName = direct.mesh.name.toLowerCase();
+/* ---- ScatteredModelsScene — physics engine + model orchestration ---- */
 
-      // Check if this is a mesh that should be split by position
-      if (meshName.includes('flower') || meshName.includes('pot')) {
-        // Get the hit point in world coordinates
-        const hitPoint = e.point;
+const ScatteredModelsScene = ({
+  onNavigate,
+  lang,
+}: {
+  onNavigate?: (targetId: string) => void;
+  lang?: "zh" | "en";
+}) => {
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [clickedLabel, setClickedLabel] = useState<{ id: TargetId; label: string } | null>(null);
+  const invalidate = useThree((st) => st.invalidate);
 
-        // Find all spots that share this mesh
-        const spotsForThisMesh = spots.filter(s => s.mesh?.uuid === direct.mesh?.uuid);
+  const groupMap = useRef<Map<TargetId, Group>>(new Map());
+  const physicsRef = useRef<ReturnType<typeof createPhysicsWorld> | null>(null);
+  const initRef = useRef(false);
 
-        console.log(`[resolveSpot] Flower/pot mesh detected: ${meshName}`);
-        console.log(`[resolveSpot] Hit point x: ${hitPoint.x}`);
-        console.log(`[resolveSpot] Spots sharing this mesh: ${spotsForThisMesh.length}`);
-        console.log(`[resolveSpot] Spot positions:`, spotsForThisMesh.map(s => ({ meshKey: s.meshKey, x: s.position[0] })));
-
-        if (spotsForThisMesh.length > 1) {
-          // Multiple spots share this mesh - determine which one based on hit position
-          // Sort by x position and find closest
-          let closestSpot = spotsForThisMesh[0];
-          let minDistance = Infinity;
-
-          spotsForThisMesh.forEach(spot => {
-            const spotX = spot.position[0];
-            const distance = Math.abs(hitPoint.x - spotX);
-            if (distance < minDistance) {
-              minDistance = distance;
-              closestSpot = spot;
-            }
-          });
-
-          console.log(`[resolveSpot] Selected spot: ${closestSpot.meshKey} at x: ${closestSpot.position[0]}`);
-          return closestSpot;
-        }
+  // Initialise physics once
+  useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+    physicsRef.current = createPhysicsWorld();
+    return () => {
+      if (physicsRef.current) {
+        Matter.World.clear(physicsRef.current.engine.world, false);
+        Matter.Engine.clear(physicsRef.current.engine);
       }
-    }
+    };
+  }, []);
 
-    if (direct) return direct;
-    const intersection = e.intersections?.[0]?.object as Mesh | undefined;
-    return resolveSpotByObject(intersection ?? null);
-  };
+  // Step physics + push transforms into model groups
+  useFrame((_, delta) => {
+    const pw = physicsRef.current;
+    if (!pw) return;
+    Matter.Engine.update(pw.engine, Math.min(delta, 0.05) * 1000);
+
+    pw.bodies.forEach((body, i) => {
+      const id = interactions[i].id;
+      const g = groupMap.current.get(id);
+      if (!g) return;
+      g.position.x = body.position.x;
+      g.position.y = -body.position.y;   // invert Y (Matter.js → Three.js)
+      g.rotation.z = body.angle;
+    });
+
+    invalidate();
+  });
+
+  const registerGroup = useCallback((id: TargetId, g: Group) => {
+    groupMap.current.set(id, g);
+  }, []);
+
+  const handlePhysicsClick = useCallback((id: TargetId) => {
+    physicsRef.current?.upImpulse(id);
+  }, []);
+
+  const hoveredInteraction = interactions.find((i) => i.id === hoveredId);
 
   return (
     <group>
-      <group
-        onPointerDown={(e) => {
-          pointerStartRef.current = { x: e.clientX, y: e.clientY };
-          pointerMovedRef.current = false;
-        }}
-        onPointerMove={(e) => {
-          const start = pointerStartRef.current;
-          if (start) {
-            const dx = e.clientX - start.x;
-            const dy = e.clientY - start.y;
-            if (Math.hypot(dx, dy) > 10) pointerMovedRef.current = true;
-          }
-          const spot = resolveSpot(e);
-          setHoveredId(spot?.id ?? null);
-          setHoveredMeshKey(spot?.meshKey ?? null); // Track specific mesh
-        }}
-        onPointerUp={() => {
-          pointerStartRef.current = null;
-        }}
-        onPointerOut={() => {
-          setHoveredId(null);
-          setHoveredMeshKey(null); // Clear specific mesh hover
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-          console.log("[DEBUG] Click detected, pointerMoved:", pointerMovedRef.current, "calibrationEnabled:", calibrationEnabled);
-          if (!calibrationEnabled && pointerMovedRef.current) return;
-          const mesh = e.object as Mesh;
-          const meshName = `${mesh.name ?? ""} ${mesh.parent?.name ?? ""}`.trim();
-          console.log("[DEBUG] Clicked mesh:", meshName);
-          console.log("[DEBUG] Mesh UUID:", mesh.uuid);
-          setLastHitName(meshName);
+      {interactions.map((interaction) => (
+        <ScatteredModel
+          key={interaction.id}
+          modelUrl={MODEL_MAP[interaction.id]}
+          targetId={interaction.id}
+          lang={lang || "zh"}
+          onNavigate={onNavigate}
+          hoveredId={hoveredId}
+          setHoveredId={setHoveredId}
+          clickedLabel={clickedLabel}
+          setClickedLabel={setClickedLabel}
+          onRegisterGroup={registerGroup}
+          onPhysicsClick={handlePhysicsClick}
+        />
+      ))}
 
-          if (calibrationEnabled) {
-            const target = BINDING_FLOW[Math.min(bindingStep, BINDING_FLOW.length - 1)];
-            const nextBindings = { ...manualBindings, [target]: meshName };
-            saveBindings(nextBindings);
-            setSelectedId(target);
-            setBindSuccessTarget(target);
-            window.setTimeout(() => {
-              setBindSuccessTarget((prev) => (prev === target ? null : prev));
-            }, 900);
-            setBindingStep((s) => Math.min(BINDING_FLOW.length, s + 1));
-            return;
-          }
+      {/* Hover label — follows physics body position */}
+      {hoveredInteraction && !clickedLabel && physicsRef.current && (() => {
+        const idx = interactions.findIndex((i) => i.id === hoveredInteraction.id);
+        const body = physicsRef.current.bodies[idx];
+        if (!body) return null;
+        return (
+          <Html
+            position={[body.position.x, -body.position.y + 0.3, 0]}
+            center distanceFactor={1.2}
+            style={{ pointerEvents: 'none', userSelect: 'none' }}
+          >
+            <div style={{
+              fontFamily: '"Shadows Into Light Two", cursive',
+              fontSize: '15px', color: '#fff',
+              textShadow: '0 1px 8px rgba(0,0,0,0.55)',
+              background: 'rgba(0,0,0,0.2)',
+              backdropFilter: 'blur(3px)',
+              WebkitBackdropFilter: 'blur(3px)',
+              padding: '2px 10px 4px 10px',
+              borderRadius: '999px', whiteSpace: 'nowrap',
+            }}>
+              {lang === 'en' ? hoveredInteraction.labelEn : hoveredInteraction.labelZh}
+            </div>
+          </Html>
+        );
+      })()}
 
-          const spot = resolveSpot(e) ?? (hoveredId ? spots.find((s) => s.id === hoveredId) : null);
-          console.log("[DEBUG] Resolved spot:", spot ? spot.id : "null");
-          console.log("[DEBUG] Available spots:", spots.map(s => ({ id: s.id, meshName: s.mesh?.name, meshUUID: s.mesh?.uuid })));
-          console.log("[DEBUG] onNavigate exists:", !!onNavigate);
-          if (!spot) {
-            console.log("[DEBUG] No spot found for this mesh");
-            return;
-          }
-          setSelectedId(spot.id);
-
-          // Show clicked label
-          const labelText = LABELS[spot.id]?.[lang] || spot.id;
-          const worldPos = new Vector3();
-          mesh.getWorldPosition(worldPos);
-          setClickedLabel({ label: labelText, position: [worldPos.x, worldPos.y + 0.3, worldPos.z] });
-
-          // Hide label after 2 seconds
-          setTimeout(() => {
-            setClickedLabel(null);
-          }, 2000);
-
-          console.log("[DEBUG] Calling onNavigate with:", spot.id);
-          onNavigate?.(spot.id);
-        }}
-      >
-        <primitive object={normalizedScene} />
-      </group>
-
-      <group>
-        <primitive object={hoverScene} />
-      </group>
-
-      <Html fullscreen style={{ pointerEvents: "none" }}>
-        {calibrationEnabled ? (
-          <div style={{ position: "absolute", right: "12px", top: "12px", pointerEvents: "auto", zIndex: 8 }}>
+      {/* Clicked label */}
+      {clickedLabel && physicsRef.current && (() => {
+        const idx = interactions.findIndex((i) => i.id === clickedLabel.id);
+        const body = physicsRef.current.bodies[idx];
+        if (!body) return null;
+        return (
+          <Html
+            position={[body.position.x, -body.position.y + 0.45, 0]}
+            center distanceFactor={1.2}
+            style={{ pointerEvents: 'none', userSelect: 'none' }}
+          >
             <div
+              key={clickedLabel.id + clickedLabel.label}
               style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-                padding: "8px",
-                borderRadius: "12px",
-                border: "1px solid rgba(255,255,255,0.14)",
-                background: "rgba(9,10,18,0.5)",
-                backdropFilter: "blur(8px)",
-                minWidth: "188px",
+                fontFamily: '"Shadows Into Light Two", cursive',
+                fontSize: '21px', color: '#fff',
+                textShadow: '0 2px 12px rgba(0,0,0,0.6)',
+                background: 'rgba(0,0,0,0.3)',
+                backdropFilter: 'blur(5px)',
+                WebkitBackdropFilter: 'blur(5px)',
+                padding: '5px 16px 7px 16px',
+                borderRadius: '999px', whiteSpace: 'nowrap',
+                animation: 'fadeInScale 0.3s ease',
               }}
             >
-              <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.94)", lineHeight: 1.5 }}>
-                {bindingStep >= BINDING_FLOW.length
-                  ? (lang === "en"
-                      ? "Binding completed. Toggle off Bind to test hover/click."
-                      : "\u7ed1\u5b9a\u5b8c\u6210\u3002\u8bf7\u5173\u95ed\u201c\u7ed1\u5b9a\u201d\u540e\u6d4b\u8bd5\u60ac\u505c/\u70b9\u51fb\u3002")
-                  : (lang === "en"
-                      ? "Click the object for each step."
-                      : "\u8bf7\u6839\u636e\u6b65\u9aa4\u63d0\u793a\u70b9\u51fb\u5bf9\u5e94\u7269\u4ef6\u3002")}
-              </div>
-
-              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.82)", lineHeight: 1.5 }}>
-                {lang === "en" ? "Progress" : "\u8fdb\u5ea6"}:{" "}
-                <b>
-                  {Math.min(bindingStep, BINDING_FLOW.length)}/{BINDING_FLOW.length}
-                </b>
-                <br />
-                {lang === "en" ? "Current target" : "\u5f53\u524d\u76ee\u6807"}:{" "}
-                <b>
-                  {bindingStep >= BINDING_FLOW.length
-                    ? (lang === "en" ? "Done" : "\u5b8c\u6210")
-                    : (lang === "en"
-                        ? interactions.find((x) => x.id === calibrationTarget)?.labelEn
-                        : interactions.find((x) => x.id === calibrationTarget)?.labelZh)}
-                </b>
-                <br />
-                {lang === "en" ? "Last mesh" : "\u6700\u8fd1\u7f51\u683c"}: <b>{lastHitName || "-"}</b>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  saveBindings({});
-                  setBindingStep(0);
-                  setCalibrationTarget(BINDING_FLOW[0]);
-                }}
-                style={{
-                  height: "30px",
-                  borderRadius: "999px",
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(255,255,255,0.1)",
-                  color: "rgba(255,255,255,0.92)",
-                  cursor: "pointer",
-                  fontSize: "11px",
-                  letterSpacing: "0.02em",
-                }}
-              >
-                {lang === "en" ? "Reset binding" : "\u91cd\u7f6e\u7ed1\u5b9a"}
-              </button>
+              {clickedLabel.label}
             </div>
-          </div>
-        ) : null}
-      </Html>
+          </Html>
+        );
+      })()}
     </group>
   );
 };
 
-// Fallback: if a model is exported as a single merged mesh, the original intent was to split it into loose parts.
-// The loose-parts implementation was removed/invalidated; keep the app functional by delegating to the multi-mesh path.
-const HouseModelLooseParts = (props: HeroAvatarViewerProps) => {
-  return <HouseModelMultiMesh {...props} />;
-};
-
-const HouseModelRouter = (props: HeroAvatarViewerProps) => {
-  const gltf = useGLTF(MODEL_URL);
-  const meshCount = useMemo(() => {
-    let count = 0;
-    gltf.scene.traverse((obj) => {
-      const mesh = obj as Mesh;
-      if (mesh && (mesh as any).isMesh) count += 1;
-    });
-    console.log("[HouseModelRouter] Model loaded, mesh count:", count);
-    return count;
-  }, [gltf.scene]);
-
-  console.log("[HouseModelRouter] Rendering with meshCount:", meshCount);
-  // If the model is a single merged mesh, split it by loose parts (connected components) at runtime.
-  if (meshCount <= 1) return <HouseModelLooseParts {...props} />;
-  return <HouseModelMultiMesh {...props} />;
-};
-
-const SceneRoom = ({ onNavigate, lang, onHoverLabelChange, theme, calibrationEnabled }: HeroAvatarViewerProps) => {
-  const groupRef = useRef<Group | null>(null);
-
-  console.log("[SceneRoom] Rendering");
-
-  useFrame((state) => {
-    if (!groupRef.current) return;
-    // è½»å¾®çå·¦å³æå¨å¨ç»ï¼ä½å§ç»ä¿ææ­£é¢æåç¨æ?
-    // åºç¡æè½¬è§åº¦ä¸?Math.PI/2ï¼?90åº¦ï¼ï¼ç¡®ä¿æ­£é¢æåç¸æ?
-    groupRef.current.rotation.y = -Math.PI / 2 + Math.sin(state.clock.elapsedTime * 0.2) * 0.06;
-    groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.004;
-  });
-
-  return (
-    <group ref={groupRef} scale={[1.1, 1.1, 1.1]} position={[0, -0.08, 0]} rotation={[0, -Math.PI / 2, 0]}>
-      <HouseModelRouter
-        onNavigate={onNavigate}
-        lang={lang}
-        onHoverLabelChange={onHoverLabelChange}
-        theme={theme}
-        calibrationEnabled={calibrationEnabled}
-      />
-    </group>
-  );
+/** Plantpot-style: set scene background color (3D scene, not CSS) */
+const SceneBackground = ({ theme }: { theme: "light" | "dark" }) => {
+  const { scene } = useThree();
+  useEffect(() => {
+    scene.background = new Color(theme === "dark" ? "#1c1814" : "#FFFCF9");
+    return () => { scene.background = null; };
+  }, [scene, theme]);
+  return null;
 };
 
 const ControlsRig = () => {
@@ -1411,143 +763,49 @@ const ControlsRig = () => {
 
   useEffect(() => {
     if (!controlsRef.current) return;
-
-    // è®¾ç½®ç¸æºçåæ¨¡åä¸­å¿
-    controlsRef.current.target.set(0, 0.02, 0);
-
-    // éç½®ç¸æºå°åå§æ­£é¢ä½ç½?
-    camera.position.set(0, 0.42, 3.0);
-
-    // æ´æ°æ§å¶å?
+    controlsRef.current.target.set(0, 0, 0);
     controlsRef.current.update();
   }, [camera]);
 
   return (
     <OrbitControls
       ref={controlsRef}
-      enablePan={false}
-      minDistance={2.0}
-      maxDistance={5.5}
-      minPolarAngle={Math.PI / 3.2}
-      maxPolarAngle={Math.PI / 1.45}
-      autoRotate={false}
+      enableRotate={false}
+      enablePan={true}
+      enableZoom={true}
+      zoomSpeed={1.0}
       enableDamping
       dampingFactor={0.08}
+      minZoom={0.4}
+      maxZoom={2}
     />
   );
 };
 
-const CozyLamp = ({ enabled }: { enabled: boolean }) => {
-  const warmLightRef = useRef<PointLight | null>(null);
-  useFrame((state) => {
-    if (!enabled || !warmLightRef.current) return;
-    const t = state.clock.elapsedTime;
-    warmLightRef.current.intensity = 1.2 + Math.sin(t * 3.4) * 0.18 + Math.sin(t * 7.1) * 0.08 + Math.sin(t * 13.2) * 0.04;
-  });
-
-  if (!enabled) return null;
-  return (
-    <group position={[0.03, 0.33, 0.18]}>
-      <pointLight
-        ref={warmLightRef}
-        color={"#ffcc88"}
-        intensity={1.35}
-        distance={2.8}
-        decay={1.4}
-      />
-      <pointLight
-        color={"#ffb15e"}
-        intensity={0.56}
-        distance={1.35}
-        decay={2.3}
-        position={[0.02, -0.05, 0.03]}
-      />
-    </group>
-  );
-};
-
 const HeroAvatarViewer = ({ onNavigate, lang, onHoverLabelChange, theme = "light", calibrationEnabled = false }: HeroAvatarViewerProps) => {
-  const [assetReady, setAssetReady] = useState<"checking" | "ready" | "missing">("checking");
-
-  console.log("[HeroAvatarViewer] Render - assetReady:", assetReady, "theme:", theme);
-
-  useEffect(() => {
-    let active = true;
-    console.log("[HeroAvatarViewer] Checking model at:", MODEL_URL);
-    fetch(MODEL_URL, { method: "HEAD" })
-      .then((res) => {
-        if (!active) return;
-        console.log("[HeroAvatarViewer] Model check result:", res.ok ? "ready" : "missing", "status:", res.status);
-        setAssetReady(res.ok ? "ready" : "missing");
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error("[HeroAvatarViewer] Model check failed:", err);
-        setAssetReady("missing");
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
   return (
-    <>
-      {/* 模型未就绪时显示全屏宠物加载动画 */}
-      {assetReady !== "ready" && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            background: theme === "dark"
-              ? "linear-gradient(180deg, #0a0a0f 0%, #0d0a1a 100%)"
-              : "linear-gradient(180deg, #f9fbff 0%, #edf2fc 100%)",
-            overflow: "hidden",
-          }}
-        >
-          <Loader theme={theme} />
-        </div>
-      )}
     <Canvas
-      shadows
-      camera={{ position: [0, 0.42, 3.0], fov: 40 }}
-      gl={{ localClippingEnabled: true }}
+      frameloop="demand"
+      dpr={[1.5, 2]}
+      orthographic
+      camera={{ position: [0, 0, 5], zoom: 1, near: 0.1, far: 100 }}
+      gl={{ antialias: true, powerPreference: "high-performance", toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.2 }}
       style={{ position: "absolute", inset: 0 }}
     >
-      {theme === "dark" ? (
-        <>
-          <ambientLight intensity={0.42} color={"#4a4458"} />
-          <directionalLight position={[2.8, 3.4, 1.8]} intensity={0.38} color={"#c4b5a8"} castShadow />
-          <directionalLight position={[-2.5, 3.0, 1.5]} intensity={0.25} color={"#9a8b94"} />
-          <pointLight position={[-1.3, 0.9, -1.4]} intensity={0.26} color={"#8a7b94"} />
-          <pointLight position={[0.6, -0.3, 1.0]} intensity={0.16} color={"#7a6a7a"} />
-        </>
-      ) : (
-        <>
-          <ambientLight intensity={0.65} color={"#faf8f3"} />
-          <directionalLight position={[3.0, 4.0, 2.2]} intensity={1.5} color={"#fff5e1"} castShadow />
-          <pointLight position={[0.2, 2.0, 0.4]} intensity={0.58} color={"#fef3e2"} />
-          <pointLight position={[-1.4, 1.1, -1.5]} intensity={0.42} color={"#f5ead8"} />
-          <pointLight position={[0.0, -0.2, 1.2]} intensity={0.22} color={"#ede5d8"} />
-        </>
-      )}
+      <SceneBackground theme={theme} />
+      {/* Warm ambient light — theme-independent */}
+      <ambientLight intensity={0.55} color={"#F0BB78"} />
+      <directionalLight position={[3.0, 4.0, 2.2]} intensity={1.2} color={"#FFF5E1"} />
+      <pointLight position={[0.2, 2.0, 0.4]} intensity={0.5} color={"#FEF3E2"} />
+      <pointLight position={[-1.4, 1.1, -1.5]} intensity={0.35} color={"#F5EAD8"} />
+      <pointLight position={[0.0, -0.2, 1.2]} intensity={0.2} color={"#EDE5D8"} />
 
-      {assetReady === "ready" ? (
-        <Suspense fallback={<Loader theme={theme} />}>
-          <SceneRoom
-            onNavigate={onNavigate}
-            lang={lang}
-            onHoverLabelChange={onHoverLabelChange}
-            theme={theme}
-            calibrationEnabled={calibrationEnabled}
-          />
-          <CozyLamp enabled={theme === "dark"} />
-          <Environment preset={theme === "dark" ? "night" : "apartment"} />
-        </Suspense>
-      ) : null}
+      <Suspense fallback={null}>
+        <ScatteredModelsScene onNavigate={onNavigate} lang={lang} />
+        <Environment preset="city" />
+      </Suspense>
       <ControlsRig />
     </Canvas>
-    </>
   );
 };
 

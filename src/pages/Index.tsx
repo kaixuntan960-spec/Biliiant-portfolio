@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState, Component, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Languages, Moon, Sun } from "lucide-react";
 import Cursor from "../components/Cursor";
 import Nav from "../components/Nav";
+import ClawMachineHero from "../components/ClawMachineHero";
 import Hero from "../components/Hero";
 import Marquee from "../components/Marquee";
 import About from "../components/About";
@@ -13,50 +13,20 @@ import Contact from "../components/Contact";
 import Footer from "../components/Footer";
 import MusicPlayer from "../components/MusicPlayer";
 import MouseTrail from "../components/MouseTrail";
-import HeroAvatarViewer from "../components/HeroAvatarViewer";
 import SoundEffect from "../components/SoundEffect";
 import ScrollProgress from "../components/ScrollProgress";
 import EasterEgg from "../components/EasterEgg";
 import WelcomeGate from "../components/WelcomeGate";
 import LoadingScreen from "../components/LoadingScreen";
-import { useI18n } from "../i18n";
-import { useThemeMode } from "../theme";
-
-/** 捕获 HeroAvatarViewer 内部错误，防止整个页面崩溃 */
-class HeroAvatarViewerErrorBoundary extends Component<{ children: ReactNode }> {
-  state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
-  render() {
-    return this.state.hasError ? null : this.props.children;
-  }
-}
 
 /** Dev-only: set true to always show WelcomeGate; disables localStorage same-day skip inside WelcomeGate. */
 const FORCE_SHOW_WELCOME_GATE = false;
 
-function webglContextAvailable(): boolean {
-  if (typeof document === "undefined") return false;
-  try {
-    const canvas = document.createElement("canvas");
-    return !!(
-      canvas.getContext("webgl2", { failIfMajorPerformanceCaveat: false }) ||
-      canvas.getContext("webgl", { failIfMajorPerformanceCaveat: false }) ||
-      canvas.getContext("experimental-webgl", { failIfMajorPerformanceCaveat: false } as WebGLContextAttributes)
-    );
-  } catch {
-    return false;
-  }
-}
-
 const Index = () => {
-  const { lang, setLang } = useI18n();
-  const { resolvedTheme, mode, setMode } = useThemeMode();
   const [appLoading, setAppLoading] = useState(true);
   const [welcomeDone, setWelcomeDone] = useState(false);
   const [musicPlaying, setMusicPlaying] = useState(false);
   const [useCustomPointerFx, setUseCustomPointerFx] = useState(false);
-  const [showModelIntro, setShowModelIntro] = useState(false);
-  const [calibrationEnabled, setCalibrationEnabled] = useState(false);
   const location = useLocation();
 
   // 组件挂载后关闭加载动画
@@ -64,68 +34,6 @@ const Index = () => {
     const t = window.setTimeout(() => setAppLoading(false), 400);
     return () => window.clearTimeout(t);
   }, []);
-
-  useEffect(() => {
-    if (!welcomeDone) return;
-    try {
-      if (sessionStorage.getItem("model_intro_seen_v1") === "1") {
-        setShowModelIntro(false);
-        return;
-      }
-    } catch {
-      // ignore
-    }
-    if (!webglContextAvailable()) {
-      setShowModelIntro(false);
-      return;
-    }
-    setShowModelIntro(true);
-  }, [welcomeDone]);
-
-  const closeModelIntro = (targetId?: string) => {
-    setShowModelIntro(false);
-    try {
-      sessionStorage.setItem("model_intro_seen_v1", "1");
-    } catch {
-      // ignore
-    }
-    if (!targetId) return;
-    const NAVBAR_H = 72;
-    window.setTimeout(() => {
-      if (targetId === "home") {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return;
-      }
-      const el = document.getElementById(targetId);
-      if (!el) return;
-      const top = el.getBoundingClientRect().top + window.scrollY - NAVBAR_H;
-      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-    }, 120);
-  };
-
-  const openModelIntro = () => {
-    setShowModelIntro(true);
-  };
-
-  // 当模型介绍覆盖层显示时，按 Enter 键关闭
-  const closeModelIntroRef = useRef(closeModelIntro);
-  closeModelIntroRef.current = closeModelIntro;
-  useEffect(() => {
-    if (!showModelIntro) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        closeModelIntroRef.current();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [showModelIntro]);
-
-  const modelIntroBg =
-    resolvedTheme === "light"
-      ? "radial-gradient(860px 480px at 12% 16%, rgba(121,174,255,0.24), rgba(121,174,255,0) 58%), radial-gradient(760px 420px at 84% 18%, rgba(193,147,255,0.2), rgba(193,147,255,0) 58%), linear-gradient(180deg, #f8fbff 0%, #edf3ff 56%, #e8eefb 100%)"
-      : "radial-gradient(820px 460px at 16% 12%, rgba(130,170,255,0.26), rgba(130,170,255,0) 58%), radial-gradient(740px 420px at 84% 22%, rgba(216,163,255,0.24), rgba(216,163,255,0) 60%), linear-gradient(180deg, #0d121d 0%, #151d2d 54%, #111827 100%)";
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -141,28 +49,94 @@ const Index = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const scrollTo = (location.state as { scrollTo?: string } | null)?.scrollTo;
-    if (scrollTo !== "works") return;
+  // 检查是否从作品页"返回主页"跳转回来（仅通过 sessionStorage 标记，不依赖 location.state）
+  const scrollToWorksRef = useRef(false);
+  const scrollCheckRef = useRef(true);
+  if (scrollCheckRef.current) {
+    scrollCheckRef.current = false;
     try {
-      const navEntry = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
-      if (navEntry?.type === "reload") {
-        return;
+      if (sessionStorage.getItem("return-to-works")) {
+        sessionStorage.removeItem("return-to-works");
+        scrollToWorksRef.current = true;
       }
-    } catch {
-      // ignore and keep default behavior
-    }
+    } catch {}
+  }
+
+  useEffect(() => {
+    if (!scrollToWorksRef.current) return;
+    scrollToWorksRef.current = false;
+
     window.setTimeout(() => {
-      const el = document.getElementById("works");
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      const section = document.getElementById("works");
+      if (!section) return;
+      const NAVBAR_H = 72;
+      const top = section.getBoundingClientRect().top + window.scrollY - NAVBAR_H;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    }, 300);
+
+    window.setTimeout(() => {
       try {
-        // Preserve React Router history.state (e.g. works carousel restore) while normalizing the URL.
-        window.history.replaceState(window.history.state, "", window.location.pathname);
+        sessionStorage.removeItem("from-work-carousel-page");
+        sessionStorage.removeItem("from-work-category");
       } catch {
         // ignore
       }
-    }, 0);
-  }, [location.state]);
+    }, 1000);
+  }, []);
+
+  // 始终监听滚动，保存精确 scrollY
+  useEffect(() => {
+    if (location.pathname !== "/") return;
+    history.scrollRestoration = "manual";
+
+    let rafId = 0;
+    const onScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        try {
+          sessionStorage.setItem("index-scrollY", String(window.scrollY));
+        } catch {
+          // ignore
+        }
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [location.pathname]);
+
+  // reload 后恢复滚动位置
+  useEffect(() => {
+    if (location.pathname !== "/" || !welcomeDone) return;
+    try {
+      const nav =
+        performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+      if (nav?.type !== "reload") return;
+      const saved = sessionStorage.getItem("index-scrollY");
+      if (!saved) return;
+      const targetY = parseInt(saved, 10);
+      if (!targetY) return;
+      let attempts = 0;
+      const tryRestore = (): void => {
+        attempts++;
+        const scrollHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+        );
+        if (scrollHeight > targetY || attempts > 300) {
+          window.scrollTo(0, targetY);
+        } else {
+          requestAnimationFrame(tryRestore);
+        }
+      };
+      requestAnimationFrame(tryRestore);
+    } catch {
+      // ignore
+    }
+  }, [location.pathname, welcomeDone]);
 
   useEffect(() => {
     const targets = Array.from(
@@ -187,7 +161,6 @@ const Index = () => {
 
   useEffect(() => {
     if (FORCE_SHOW_WELCOME_GATE) {
-      // 强制显示模式：每次都显示 WelcomeGate
       setWelcomeDone(false);
       return;
     }
@@ -215,10 +188,10 @@ const Index = () => {
 
   return (
     <>
-      {/* 初始加载动画 — 仅显示跳动小人，没有弹窗 */}
+      {/* 初始加载动画 */}
       {appLoading && <LoadingScreen />}
 
-      {/* WelcomeGate - 全屏独立页面，一天只显示一次 */}
+      {/* WelcomeGate - 一天只显示一次 */}
       {!appLoading && !welcomeDone && (
         <WelcomeGate
           allowStorageAutoComplete={!FORCE_SHOW_WELCOME_GATE}
@@ -236,136 +209,8 @@ const Index = () => {
         />
       )}
 
-      {/* 3D 小屋模型 - 全屏显示，点击物体跳转到网站 */}
-      {welcomeDone && showModelIntro && (
-        <div
-          className="fixed inset-0 z-[10000]"
-          style={{
-            background: modelIntroBg,
-          }}
-        >
-          <div
-            className="absolute inset-0 opacity-[0.08] pointer-events-none"
-            style={{
-              backgroundImage:
-                "linear-gradient(var(--primary) 1px, transparent 1px), linear-gradient(90deg, var(--primary) 1px, transparent 1px)",
-              backgroundSize: "80px 80px",
-              zIndex: 1,
-            }}
-          />
-          <div className="absolute inset-0" style={{ zIndex: 10 }}>
-            <HeroAvatarViewerErrorBoundary>
-            <HeroAvatarViewer
-              onNavigate={(targetId) => closeModelIntro(targetId)}
-              lang={lang}
-              theme={resolvedTheme}
-              calibrationEnabled={calibrationEnabled}
-            />
-            </HeroAvatarViewerErrorBoundary>
-          </div>
-          <div
-            style={{
-              position: "absolute",
-              right: "16px",
-              top: "16px",
-              zIndex: 10002,
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setMode(mode === "light" ? "dark" : "light")}
-              style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "999px",
-                border: "1px solid rgba(255,255,255,0.24)",
-                background: resolvedTheme === "light" ? "rgba(255,255,255,0.78)" : "rgba(255,255,255,0.12)",
-                color: resolvedTheme === "light" ? "rgba(15,23,42,0.9)" : "rgba(255,255,255,0.95)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-              title={mode === "light" ? "切换到黑夜模式" : "切换到白天模式"}
-              aria-label={mode === "light" ? "切换到黑夜模式" : "切换到白天模式"}
-            >
-              {mode === "light" ? <Moon size={15} /> : <Sun size={15} />}
-            </button>
-            <button
-              type="button"
-              onClick={() => setLang(lang === "zh" ? "en" : "zh")}
-              style={{
-                height: "36px",
-                padding: "0 10px",
-                borderRadius: "999px",
-                border: "1px solid rgba(255,255,255,0.24)",
-                background: resolvedTheme === "light" ? "rgba(255,255,255,0.78)" : "rgba(255,255,255,0.12)",
-                color: resolvedTheme === "light" ? "rgba(15,23,42,0.9)" : "rgba(255,255,255,0.95)",
-                cursor: "pointer",
-                fontSize: "11px",
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-              title={lang === "zh" ? "Switch to English" : "切换到中文"}
-              aria-label={lang === "zh" ? "Switch to English" : "切换到中文"}
-            >
-              <Languages size={13} />
-              {lang === "zh" ? "EN" : "中文"}
-            </button>
-          </div>
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              bottom: "26px",
-              transform: "translateX(-50%)",
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-            }}
-          >
-            <div
-              style={{
-                padding: "8px 12px",
-                borderRadius: "999px",
-                border: "1px solid rgba(255,255,255,0.2)",
-                background: resolvedTheme === "light" ? "rgba(255,255,255,0.74)" : "rgba(255,255,255,0.1)",
-                color: resolvedTheme === "light" ? "rgba(15,23,42,0.9)" : "rgba(255,255,255,0.92)",
-                fontSize: "11px",
-                backdropFilter: "blur(10px)",
-              }}
-            >
-              {lang === "en" ? "Explore the 3D model, click objects to navigate" : "先探索 3D 模型，点击物件跳转对应模块"}
-            </div>
-            <button
-              type="button"
-              onClick={() => closeModelIntro()}
-              style={{
-                padding: "8px 14px",
-                borderRadius: "999px",
-                border: "1px solid rgba(255,255,255,0.26)",
-                background: resolvedTheme === "light" ? "rgba(255,255,255,0.82)" : "rgba(255,255,255,0.14)",
-                color: resolvedTheme === "light" ? "rgba(15,23,42,0.92)" : "rgba(255,255,255,0.95)",
-                cursor: "pointer",
-                fontSize: "11px",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-              }}
-            >
-              Enter
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 网站主页面 - 只在关闭小屋模型后显示 */}
-      {welcomeDone && !showModelIntro && (
+      {/* 主页面 — 包含抓娃娃机 Hero + 各模块 */}
+      {welcomeDone && (
         <div className={`noise ${useCustomPointerFx ? "cursor-none" : ""}`}>
           {useCustomPointerFx ? <Cursor /> : null}
           <MouseTrail enabled={useCustomPointerFx} />
@@ -373,14 +218,17 @@ const Index = () => {
           <ScrollProgress />
           <EasterEgg />
 
-          {/* Music Player Control */}
           <MusicPlayer
             playing={musicPlaying}
             onToggle={handleMusicToggle}
           />
 
-          <Nav onOpenModelIntro={openModelIntro} />
+          <Nav />
           <main>
+            {/* 抓娃娃机作为首页 Hero */}
+            <section className="w-full h-screen relative">
+              <ClawMachineHero />
+            </section>
             <Hero />
             <Marquee />
             <About />

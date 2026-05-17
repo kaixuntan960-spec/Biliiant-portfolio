@@ -3,12 +3,11 @@ import { Check, Languages, Menu, Moon, Sun, X } from "lucide-react";
 import { useI18n, useSiteContent } from "../i18n";
 import { useThemeMode } from "../theme";
 
-interface NavProps {
-  onOpenModelIntro?: () => void;
-}
+interface NavProps {}
 
-const Nav = ({ onOpenModelIntro }: NavProps) => {
+const Nav = ({}: NavProps) => {
   const [scrolled, setScrolled] = useState(false);
+  const [visible, setVisible] = useState(false);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState("");
   const [resumeDownloaded, setResumeDownloaded] = useState(false);
@@ -18,7 +17,10 @@ const Nav = ({ onOpenModelIntro }: NavProps) => {
   const siteContent = useSiteContent();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 60);
+      setVisible(window.scrollY > window.innerHeight * 0.85);
+    };
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -43,6 +45,8 @@ const Nav = ({ onOpenModelIntro }: NavProps) => {
     <header
       data-cmp="Nav"
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        visible ? "" : "opacity-0 pointer-events-none"
+      } ${
         scrolled ? "backdrop-blur-xl border-b border-border" : ""
       }`}
       style={{ background: scrolled ? "var(--nav-bg-scrolled)" : "transparent", transition: "background 420ms ease, border-color 320ms ease" }}
@@ -56,106 +60,13 @@ const Nav = ({ onOpenModelIntro }: NavProps) => {
           height: "64px",
         }}
       >
-        {/* Logo - 点击回到 3D 小屋 */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenModelIntro?.();
-          }}
-          className="group flex items-center"
-          style={{
-            cursor: "pointer",
-            background: "none",
-            border: "none",
-            padding: 0,
-            position: "relative",
-          }}
-          onMouseEnter={(e) => {
-            const icon = e.currentTarget.querySelector("[data-icon]") as HTMLElement;
-            const tip = e.currentTarget.querySelector("[data-tip]") as HTMLElement;
-            if (icon) icon.style.transform = "scale(1.12) rotate(-4deg)";
-            if (tip) { tip.style.opacity = "1"; tip.style.transform = "translateY(-50%) translateX(0)"; }
-          }}
-          onMouseLeave={(e) => {
-            const icon = e.currentTarget.querySelector("[data-icon]") as HTMLElement;
-            const tip = e.currentTarget.querySelector("[data-tip]") as HTMLElement;
-            if (icon) icon.style.transform = "scale(1) rotate(0deg)";
-            if (tip) { tip.style.opacity = "0"; tip.style.transform = "translateY(-50%) translateX(-4px)"; }
-          }}
-        >
-          {/* 精致小屋图标 */}
-          <div
-            data-icon
-            style={{
-              width: "30px",
-              height: "30px",
-              borderRadius: "10px",
-              background: "linear-gradient(145deg, #7c5cfc 0%, #a78bfa 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              transition: "transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)",
-              boxShadow: "0 2px 8px rgba(124,92,252,0.25)",
-            }}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              {/* 屋顶 */}
-              <path d="M3 10L12 3L21 10" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M12 3L3 10h18L12 3z" fill="rgba(255,255,255,0.2)"/>
-              {/* 墙体 */}
-              <path d="M5 10V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10" stroke="white" strokeWidth="1.5" strokeLinejoin="round" fill="rgba(255,255,255,0.08)"/>
-              {/* 门 */}
-              <rect x="10" y="14.5" width="4" height="6.5" rx="1" fill="rgba(255,255,255,0.18)" stroke="white" strokeWidth="1.1"/>
-              {/* 左窗 */}
-              <rect x="6.5" y="11.5" width="2.5" height="2.5" rx="0.5" fill="rgba(255,220,100,0.35)" stroke="white" strokeWidth="0.9"/>
-              {/* 右窗 */}
-              <rect x="15" y="11.5" width="2.5" height="2.5" rx="0.5" fill="rgba(255,220,100,0.35)" stroke="white" strokeWidth="0.9"/>
-            </svg>
-          </div>
-
-          {/* 悬停提示 */}
-          <span
-            data-tip
-            style={{
-              position: "absolute",
-              left: "calc(100% + 6px)",
-              top: "50%",
-              transform: "translateY(-50%) translateX(-4px)",
-              padding: "4px 10px",
-              borderRadius: "8px",
-              fontSize: "10px",
-              fontWeight: "500",
-              letterSpacing: "0.04em",
-              whiteSpace: "nowrap",
-              background: "rgba(0,0,0,0.72)",
-              backdropFilter: "blur(8px)",
-              color: "rgba(255,255,255,0.92)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              opacity: 0,
-              transition: "opacity 0.2s ease, transform 0.2s ease",
-              pointerEvents: "none",
-              zIndex: 100,
-            }}
-          >
-            探索 3D 小屋
-          </span>
-        </button>
-
         {/* Desktop Nav */}
-        <nav className="hidden xl:flex items-center" style={{ gap: "var(--space-8)" }}>
+        <nav className="hidden xl:flex items-center justify-center flex-1" style={{ gap: "var(--space-8)" }}>
           {siteContent.nav.items.map((item) => (
             <button
               key={item.href}
               onClick={() => handleNav(item.href)}
-              className={`relative group transition-all duration-200 ${
+              className={`relative group transition-all duration-200 text-center ${
                 active === item.href ? "text-primary" : "text-muted-foreground hover:text-foreground"
               }`}
               style={{ fontSize: "var(--text-sm)", letterSpacing: "0.05em" }}
