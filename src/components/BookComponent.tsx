@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Hand } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useI18n, useSiteContent } from "../i18n";
 import { useGesturePageTurn } from "../hooks/useGesturePageTurn";
+import MusicPlayer from "../components/MusicPlayer";
 
 const IMAGE_TOTAL = 23;
 const IMAGE_PAGES = Array.from({ length: IMAGE_TOTAL }, (_, idx) => {
@@ -94,6 +95,22 @@ const BookComponent = () => {
     w: typeof window !== "undefined" ? window.innerWidth : 1280,
     h: typeof window !== "undefined" ? window.innerHeight : 900,
   }));
+  const [musicPlaying, setMusicPlaying] = React.useState(false);
+
+  React.useEffect(() => {
+    try {
+      setMusicPlaying(localStorage.getItem("bgm_preferred") === "1");
+    } catch {
+      setMusicPlaying(false);
+    }
+  }, []);
+
+  const handleMusicToggle = (next: boolean) => {
+    setMusicPlaying(next);
+    try {
+      localStorage.setItem("bgm_preferred", next ? "1" : "0");
+    } catch {}
+  };
 
   React.useEffect(() => {
     setCanRenderFlipBook(true);
@@ -275,27 +292,31 @@ const BookComponent = () => {
     if (curIdx < 0) return null;
     return worksWithSlug[(curIdx + 1) % worksWithSlug.length] ?? null;
   }, [worksWithSlug]);
+  const prevWork = React.useMemo(() => {
+    const curIdx = worksWithSlug.findIndex((w) => w.slug === "socks-detective");
+    if (curIdx < 0) return null;
+    return worksWithSlug[(curIdx - 1 + worksWithSlug.length) % worksWithSlug.length] ?? null;
+  }, [worksWithSlug]);
 
   return (
     <Container>
+      <MusicPlayer playing={musicPlaying} onToggle={handleMusicToggle} />
       <TopHomeButton
         type="button"
         onClick={() => {
-          const st = location.state as WorksReturnState | null;
-          navigate("/", {
-            state: {
-              scrollTo: "works",
-              worksCarouselPage: typeof st?.worksCarouselPage === "number" ? st.worksCarouselPage : undefined,
-              worksCategory: typeof st?.worksCategory === "string" ? st.worksCategory : undefined,
-            },
-          });
+          try { sessionStorage.setItem("return-to-works", "1"); } catch {}
+          navigate("/");
         }}
       >
         <ArrowLeft size={14} />
         {lang === "en" ? "Home" : "返回主页"}
       </TopHomeButton>
 
-      <Title>谭凯洵绘本 · 3D 翻书阅读</Title>
+      <Title>
+        <span className="title-label">{lang === 'en' ? '✦ PICTURE BOOK ✦' : '✦ 绘本阅读 ✦'}</span>
+        <span className="title-main">{lang === 'en' ? 'Sock Detective' : '袜子侦探社'}</span>
+        <span className="title-sub">{lang === 'en' ? '3D Flip Book' : '3D 翻书阅读'}</span>
+      </Title>
 
       <TopRightGestureDock>
         {gestureOn ? (
@@ -397,18 +418,57 @@ const BookComponent = () => {
         </NavButton>
       </Toolbar>
 
+      {prevWork?.slug ? (
+        <button
+          type="button"
+          onClick={() => navigate(`/works/${prevWork.slug}`)}
+          className="fixed z-[9000] flex items-center transition-all duration-300 hover:scale-[1.02]"
+          style={{
+            left: "96px",
+            bottom: "16px",
+            gap: "10px",
+            padding: "10px 14px",
+            borderRadius: "999px",
+            background: "rgba(255,248,235,0.75)",
+            border: "1px solid rgba(160,130,100,0.15)",
+            color: "rgba(60,40,25,0.85)",
+            backdropFilter: "blur(10px)",
+            boxShadow: "0 2px 8px rgba(140,110,80,0.08)",
+          }}
+          title={lang === "en" ? `Previous: ${prevWork.title}` : `上一个作品：${prevWork.title}`}
+          aria-label={lang === "en" ? `Previous work: ${prevWork.title}` : `上一个作品：${prevWork.title}`}
+        >
+          <ArrowLeft size={14} />
+          <span style={{ fontSize: "13px", fontWeight: 600 }}>
+            {lang === "en" ? "Prev Project" : "上一个项目"}
+          </span>
+        </button>
+      ) : null}
       {nextWork?.slug ? (
-        <NextWorkButton
+        <button
           type="button"
           onClick={() => navigate(`/works/${nextWork.slug}`)}
+          className="fixed z-[9000] flex items-center transition-all duration-300 hover:scale-[1.02]"
+          style={{
+            right: "16px",
+            bottom: "16px",
+            gap: "10px",
+            padding: "10px 14px",
+            borderRadius: "999px",
+            background: "rgba(255,248,235,0.75)",
+            border: "1px solid rgba(160,130,100,0.15)",
+            color: "rgba(60,40,25,0.85)",
+            backdropFilter: "blur(10px)",
+            boxShadow: "0 2px 8px rgba(140,110,80,0.08)",
+          }}
           title={lang === "en" ? `Next: ${nextWork.title}` : `下一个作品：${nextWork.title}`}
+          aria-label={lang === "en" ? `Next work: ${nextWork.title}` : `下一个作品：${nextWork.title}`}
         >
-          <span>
-            <strong>{lang === "en" ? "Next work" : "下一个作品"}</strong>
-            <small>{nextWork.title}</small>
+          <span style={{ fontSize: "13px", fontWeight: 600 }}>
+            {lang === "en" ? "Next Project" : "下一个项目"}
           </span>
           <ArrowRight size={14} />
-        </NextWorkButton>
+        </button>
       ) : null}
     </Container>
   );
@@ -426,10 +486,15 @@ const Container = styled.section`
   align-items: center;
   justify-content: flex-start;
   background:
-    radial-gradient(circle at 20% 10%, #fff9ea 0%, transparent 28%),
-    radial-gradient(circle at 80% 90%, #f9edd6 0%, transparent 28%),
-    #f4e8d1;
-  color: #402818;
+    /* 淡淡黄色光晕 - 右上角 */
+    radial-gradient(800px 600px at 82% 12%, rgba(255,210,150,0.18) 0%, transparent 55%),
+    /* 淡紫色点缀 - 延续海报板视觉 */
+    radial-gradient(700px 550px at 18% 8%, rgba(200,165,245,0.15) 0%, transparent 55%),
+    radial-gradient(600px 450px at 88% 85%, rgba(200,180,230,0.10) 0%, transparent 50%),
+    radial-gradient(500px 400px at 42% 50%, rgba(230,210,240,0.08) 0%, transparent 48%),
+    radial-gradient(400px 350px at 12% 72%, rgba(180,200,240,0.07) 0%, transparent 48%),
+    #FCF9F6;
+  color: rgba(0,0,0,0.8);
 
   .gesture-preview-wrap {
     position: relative;
@@ -468,23 +533,42 @@ const Container = styled.section`
   }
 `;
 
-const Title = styled.h1`
-  margin: 2px 0 8px;
-  text-align: center;
-  font-size: clamp(1.12rem, 2.1vw, 1.75rem);
-  letter-spacing: 0.04em;
-  font-weight: 800;
-  color: #553722;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.38);
+const Title = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 24px 12px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  position: relative;
+  z-index: 10;
 
-  &::before {
-    content: "PORTFOLIO BOOK";
-    display: block;
-    margin-bottom: 6px;
-    font-size: 0.66rem;
-    letter-spacing: 0.2em;
-    font-weight: 700;
-    color: rgba(122, 87, 52, 0.72);
+  .title-label {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    font-weight: 600;
+    color: rgba(0,0,0,0.35);
+  }
+
+  .title-main {
+    font-family: "Playfair Display", Georgia, serif;
+    font-style: italic;
+    font-size: clamp(1rem, 2.2vw, 1.6rem);
+    color: rgba(0,0,0,0.85);
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+  }
+
+  .title-sub {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    font-weight: 500;
+    color: rgba(0,0,0,0.35);
   }
 `;
 
@@ -493,20 +577,32 @@ const BookWrap = styled.div`
   max-width: calc(100vw - 300px);
   flex: 1 1 auto;
   min-height: 0;
-  margin-top: 10px;
-  padding: 8px 0 4px;
+  margin-top: 6px;
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
-  border-radius: 14px;
-  padding: 0;
-  background: transparent;
-  box-shadow: none;
+  border-radius: 18px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 4px 24px rgba(0,0,0,0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
   perspective: 2400px;
+  backdrop-filter: blur(4px);
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    border: 1px solid rgba(0,0,0,0.06);
+    pointer-events: none;
+  }
 
   @media (max-width: 980px) {
     max-width: min(94vw, 980px);
+    padding: 8px;
   }
 
   .sock-detective-book {
@@ -573,46 +669,53 @@ const BookImage = styled.div<{ $part: "full" | "left" | "right"; $imageUrl: stri
 
 
 const Toolbar = styled.div`
-  margin-top: 8px;
+  margin-top: 10px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
+  gap: 12px;
+  padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(255, 247, 230, 0.66);
-  border: 1px solid rgba(165, 127, 89, 0.26);
-  box-shadow: 0 8px 18px rgba(121, 88, 53, 0.12);
+  background: rgba(255, 248, 235, 0.65);
+  border: 1px solid rgba(160, 130, 100, 0.18);
+  box-shadow: 0 2px 8px rgba(140, 110, 80, 0.08);
   flex-shrink: 0;
+  backdrop-filter: blur(8px);
 `;
 
 const NavButton = styled.button`
-  height: 32px;
-  padding: 0 12px;
+  height: 34px;
+  padding: 0 14px;
   border-radius: 999px;
-  border: 1px solid rgba(138, 99, 61, 0.36);
-  background: linear-gradient(135deg, #fff6e6 0%, #f2dec0 100%);
-  color: #5a3a23;
+  border: 1px solid rgba(160, 130, 100, 0.2);
+  background: rgba(255, 248, 235, 0.75);
+  color: rgba(60, 40, 25, 0.85);
   cursor: pointer;
   font-weight: 700;
   font-size: 13px;
-  letter-spacing: 0.02em;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  transition: all 0.18s ease;
+  letter-spacing: 0.04em;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 4px rgba(140, 110, 80, 0.08);
 
   &:hover {
-    transform: translateY(-1px);
-    background: linear-gradient(135deg, #fff8eb 0%, #efd6b0 100%);
+    transform: translateY(-2px);
+    background: rgba(255, 242, 222, 0.9);
+    box-shadow: 0 4px 14px rgba(140, 110, 80, 0.14);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 `;
 
 const PageIndicator = styled.p`
   margin: 0;
-  min-width: 64px;
+  min-width: 72px;
   text-align: center;
   font-weight: 800;
-  font-size: 13px;
-  color: #684527;
-  letter-spacing: 0.04em;
+  font-size: 14px;
+  color: rgba(0,0,0,0.7);
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
 `;
 
 
@@ -621,9 +724,9 @@ const ErrorCard = styled.div`
   min-width: min(90vw, 680px);
   display: grid;
   place-items: center;
-  color: #5c3b22;
-  background: rgba(255, 248, 232, 0.92);
-  border: 1px solid rgba(111, 77, 47, 0.35);
+  color: rgba(0,0,0,0.6);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0,0,0,0.06);
   border-radius: 12px;
   padding: 16px;
   text-align: center;
@@ -637,68 +740,39 @@ const TopHomeButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 10px 16px;
   border-radius: 999px;
-  border: 1px solid rgba(95, 71, 46, 0.35);
-  background: rgba(255, 248, 233, 0.9);
-  color: #52351f;
-  backdrop-filter: blur(8px);
+  border: 1px solid rgba(160, 130, 100, 0.15);
+  background: rgba(255, 248, 235, 0.75);
+  color: rgba(60, 40, 25, 0.85);
+  backdrop-filter: blur(10px);
   cursor: pointer;
   font-weight: 700;
-`;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(140, 110, 80, 0.08);
 
-const NextWorkButton = styled.button`
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  z-index: 8900;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(95, 71, 46, 0.35);
-  background: rgba(255, 248, 233, 0.92);
-  color: #52351f;
-  backdrop-filter: blur(8px);
-  cursor: pointer;
-  box-shadow: 0 10px 26px rgba(85, 62, 38, 0.18);
-
-  span {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    line-height: 1.2;
-  }
-
-  strong {
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  small {
-    font-size: 12px;
-    max-width: 180px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  &:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 242, 222, 0.9);
+    box-shadow: 0 4px 14px rgba(140, 110, 80, 0.14);
   }
 `;
 
 const GesturePanel = styled.div`
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   max-width: min(92vw, 430px);
   min-height: 40px;
-  padding: 6px 8px;
+  padding: 6px 10px;
   border-radius: 12px;
-  background: rgba(255, 248, 233, 0.86);
-  border: 1px solid rgba(95, 71, 46, 0.2);
-  box-shadow: 0 8px 16px rgba(85, 62, 38, 0.1);
-  color: #5a3a23;
+  background: rgba(255, 248, 235, 0.65);
+  border: 1px solid rgba(160, 130, 100, 0.16);
+  box-shadow: 0 2px 8px rgba(140, 110, 80, 0.06);
+  color: rgba(60, 40, 25, 0.75);
   font-size: 11px;
+  backdrop-filter: blur(6px);
 
   p {
     margin: 0;
@@ -707,13 +781,13 @@ const GesturePanel = styled.div`
 
   span {
     font-size: 11px;
-    color: #6c4b2e;
+    color: rgba(60, 40, 25, 0.6);
     line-height: 1.25;
   }
 
   em {
     font-style: normal;
-    color: #8a4120;
+    color: #c05530;
   }
 `;
 
@@ -721,21 +795,26 @@ const GestureToggle = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 26px;
-  padding: 0 8px;
+  height: 28px;
+  padding: 0 10px;
   border-radius: 999px;
-  border: 1px solid rgba(95, 71, 46, 0.28);
-  background: #fff7e8;
-  color: #5a3a23;
+  border: 1px solid rgba(160, 130, 100, 0.18);
+  background: rgba(255, 248, 235, 0.75);
+  color: rgba(60, 40, 25, 0.75);
   cursor: pointer;
   font-size: 11px;
   font-weight: 700;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 242, 222, 0.9);
+  }
 `;
 
 const TopRightGestureDock = styled.div`
   position: fixed;
-  top: 8px;
-  right: 8px;
+  top: 12px;
+  right: 12px;
   z-index: 8800;
   display: flex;
   flex-direction: column;
@@ -744,8 +823,8 @@ const TopRightGestureDock = styled.div`
   max-width: min(36vw, 430px);
 
   @media (max-width: 980px) {
-    top: 6px;
-    right: 6px;
+    top: 8px;
+    right: 8px;
     max-width: min(52vw, 360px);
   }
 
@@ -759,7 +838,7 @@ const CenteredGestureBar = styled.div`
   width: min(92vw, 980px);
   display: flex;
   justify-content: center;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   z-index: 20;
 `;
 

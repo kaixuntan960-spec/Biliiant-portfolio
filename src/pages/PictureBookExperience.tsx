@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, BookOpen, ChevronLeft, ChevronRight, Hand, Sparkles } from "lucide-react";
 import { useI18n } from "../i18n";
+import { useScrollRestore } from "../hooks/useScrollRestore";
 import { useGesturePageTurn } from "../hooks/useGesturePageTurn";
 import PdfCanvasFlipBook from "../components/PdfCanvasFlipBook";
 
@@ -36,6 +37,7 @@ export default function PictureBookExperience() {
   const navigate = useNavigate();
   const location = useLocation();
   const { slug } = useParams<{ slug: string }>();
+  useScrollRestore();
   const { lang } = useI18n();
   const isEn = lang === "en";
 
@@ -222,7 +224,7 @@ export default function PictureBookExperience() {
                 const st = location.state as WorksNavState | null;
                 navigate("/", {
                   state: {
-                    scrollTo: "works",
+                    __fromWorkReturn: true,
                     worksCarouselPage: typeof st?.worksCarouselPage === "number" ? st.worksCarouselPage : undefined,
                     worksCategory: typeof st?.worksCategory === "string" ? st.worksCategory : undefined,
                   },

@@ -13,6 +13,7 @@ import Contact from "../components/Contact";
 import Footer from "../components/Footer";
 import MusicPlayer from "../components/MusicPlayer";
 import MouseTrail from "../components/MouseTrail";
+import ModelLandingZone from "../components/ModelLandingZone";
 import SoundEffect from "../components/SoundEffect";
 import ScrollProgress from "../components/ScrollProgress";
 import EasterEgg from "../components/EasterEgg";
@@ -23,7 +24,7 @@ import LoadingScreen from "../components/LoadingScreen";
 const FORCE_SHOW_WELCOME_GATE = false;
 
 const Index = () => {
-  const [appLoading, setAppLoading] = useState(true);
+  const [appLoading, setAppLoading] = useState(false);
   const [welcomeDone, setWelcomeDone] = useState(false);
   const [musicPlaying, setMusicPlaying] = useState(false);
   const [useCustomPointerFx, setUseCustomPointerFx] = useState(false);
@@ -229,7 +230,10 @@ const Index = () => {
             <section className="w-full h-screen relative">
               <ClawMachineHero />
             </section>
-            <Hero />
+            <div className="relative">
+              <Hero />
+              <ModelLandingZone />
+            </div>
             <Marquee />
             <About />
             <Works />

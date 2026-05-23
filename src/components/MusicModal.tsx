@@ -105,7 +105,7 @@ const MusicModal = ({ onChoice = () => {}, visible = true }: MusicModalProps) =>
           ))}
         </div>
 
-        <h2 className="text-2xl font-black tracking-tight text-foreground mb-2">
+        <h2 className="text-2xl font-semibold tracking-tight text-foreground mb-2">
           {lang === "en" ? "Welcome ✨" : "欢迎来到我的空间 ✨"}
         </h2>
         <p className="text-muted-foreground text-sm leading-relaxed mb-8">

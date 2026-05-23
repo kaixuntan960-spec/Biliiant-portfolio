@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Languages, Menu, Moon, Sun, X } from "lucide-react";
+import { Check, Gamepad2, Languages, Menu, Moon, Sun, X } from "lucide-react";
 import { useI18n, useSiteContent } from "../i18n";
 import { useThemeMode } from "../theme";
 
@@ -49,7 +49,7 @@ const Nav = ({}: NavProps) => {
       } ${
         scrolled ? "backdrop-blur-xl border-b border-border" : ""
       }`}
-      style={{ background: scrolled ? "var(--nav-bg-scrolled)" : "transparent", transition: "background 420ms ease, border-color 320ms ease" }}
+      style={{ background: scrolled ? "var(--nav-bg-scrolled)" : "transparent", transition: "background 500ms ease, border-color 500ms ease" }}
     >
       <div
         className="mx-auto flex items-center justify-between"
@@ -62,6 +62,34 @@ const Nav = ({}: NavProps) => {
       >
         {/* Desktop Nav */}
         <nav className="hidden xl:flex items-center justify-center flex-1" style={{ gap: "var(--space-8)" }}>
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="flex items-center transition-all duration-200 hover:scale-105"
+            style={{
+              gap: "5px",
+              fontSize: "var(--text-xs)",
+              padding: "5px 14px",
+              borderRadius: "var(--radius-full)",
+              background: "transparent",
+              border: "1px solid rgba(168, 85, 247, 0.5)",
+              color: "rgb(168, 85, 247)",
+              letterSpacing: "0.04em",
+              boxShadow: "0 0 8px rgba(168, 85, 247, 0.2), inset 0 0 6px rgba(168, 85, 247, 0.06)",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 0 14px rgba(168, 85, 247, 0.4), inset 0 0 8px rgba(168, 85, 247, 0.1)"; e.currentTarget.style.borderColor = "rgba(168, 85, 247, 0.8)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 0 8px rgba(168, 85, 247, 0.2), inset 0 0 6px rgba(168, 85, 247, 0.06)"; e.currentTarget.style.borderColor = "rgba(168, 85, 247, 0.5)"; }}
+          >
+            <Gamepad2 size={13} />
+            {lang === "zh" ? "抓娃娃" : "Claw"}
+          </button>
+          <button
+            onClick={() => { const el = document.querySelector("#hero-section"); if (el) el.scrollIntoView({ behavior: "smooth" }); else window.scrollTo({ top: window.innerHeight, behavior: "smooth" }); }}
+            className={`relative group transition-all duration-200 text-center text-muted-foreground hover:text-foreground`}
+            style={{ fontSize: "var(--text-sm)", letterSpacing: "0.05em" }}
+          >
+            {lang === "zh" ? "首页" : "Home"}
+            <span className="absolute -bottom-0.5 left-0 h-px transition-all duration-300 w-0 bg-primary group-hover:w-full" />
+          </button>
           {siteContent.nav.items.map((item) => (
             <button
               key={item.href}
@@ -271,7 +299,7 @@ const Nav = ({}: NavProps) => {
             background: "var(--nav-panel-bg)",
             padding: "var(--space-6) clamp(16px, 3.5vw, var(--space-12))",
             gap: "var(--space-4)",
-            transition: "background 420ms ease, border-color 320ms ease",
+            transition: "background 500ms ease, border-color 500ms ease",
           }}
         >
           <button
@@ -283,6 +311,33 @@ const Nav = ({}: NavProps) => {
           >
             {mode === "dark" ? <Moon size={14} /> : <Sun size={14} />}
             {mode === "dark" ? (lang === "en" ? "Night mode" : "黑夜模式") : lang === "en" ? "Day mode" : "白天模式"}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            className="flex items-center transition-all duration-200"
+            style={{
+              gap: "6px",
+              fontSize: "var(--text-xs)",
+              padding: "5px 14px",
+              borderRadius: "var(--radius-full)",
+              background: "transparent",
+              border: "1px solid rgba(168, 85, 247, 0.5)",
+              color: "rgb(168, 85, 247)",
+              width: "fit-content",
+              boxShadow: "0 0 8px rgba(168, 85, 247, 0.2), inset 0 0 6px rgba(168, 85, 247, 0.06)",
+            }}
+          >
+            <Gamepad2 size={13} />
+            {lang === "zh" ? "抓娃娃" : "Claw Machine"}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setOpen(false); const el = document.querySelector("#hero-section"); if (el) el.scrollIntoView({ behavior: "smooth" }); else window.scrollTo({ top: window.innerHeight, behavior: "smooth" }); }}
+            className="text-left text-muted-foreground hover:text-primary transition-colors flex items-center"
+            style={{ fontSize: "var(--text-sm)", gap: "var(--space-2)" }}
+          >
+            {lang === "zh" ? "首页" : "Home"}
           </button>
           {siteContent.nav.items.map((item) => (
             <button

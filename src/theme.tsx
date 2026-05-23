@@ -19,7 +19,7 @@ const getThemeByTime = (): ResolvedTheme => {
 };
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const PHASE_MS = 520;
+  const PHASE_MS = 500;
   const [mode, setModeState] = useState<ThemeMode>(getThemeByTime());
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(getThemeByTime());
   const [transitionTo, setTransitionTo] = useState<ThemeMode | null>(null);
@@ -42,13 +42,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setMode = (next: ThemeMode) => {
     if (next === mode || transitionTo) return;
-    // Sequential animation: outgoing finishes, then incoming starts (no overlap).
-    const SWITCH_AT_MS = 520;
-    const HOLD_MS = 260;
+    const SWITCH_AT_MS = 500;
+    const HOLD_MS = 200;
     const END_AT_MS = PHASE_MS * 2 + HOLD_MS;
 
     setTransitionTo(next);
     setTransitionActive(false);
+    document.documentElement.setAttribute("data-theme-transitioning", "");
     window.requestAnimationFrame(() => {
       setTransitionActive(true);
     });
@@ -65,6 +65,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     window.setTimeout(() => {
       setTransitionActive(false);
       setTransitionTo(null);
+      document.documentElement.removeAttribute("data-theme-transitioning");
     }, END_AT_MS);
 
     return;
@@ -100,11 +101,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           style={{
             zIndex: 10001,
             opacity: transitionActive && transitionTo ? 1 : 0,
-            transition: "opacity 320ms ease",
+            transition: "opacity 500ms cubic-bezier(0.4, 0, 0.2, 1)",
             background:
               transitionTo === "dark"
-                ? "linear-gradient(180deg, rgba(28,30,45,0.32) 0%, rgba(8,9,14,0.5) 100%)"
-                : "linear-gradient(180deg, rgba(120,190,255,0.22) 0%, rgba(255,236,169,0.22) 100%)",
+                ? "radial-gradient(ellipse at 50% 40%, rgba(28,30,45,0.4) 0%, rgba(8,9,14,0.55) 100%)"
+                : "radial-gradient(ellipse at 50% 40%, rgba(255,250,230,0.3) 0%, rgba(200,230,255,0.2) 100%)",
           }}
         >
           <style>

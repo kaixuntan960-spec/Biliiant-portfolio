@@ -189,6 +189,10 @@ const WorkDetailModal = ({
 
   const openCase = () => {
     onClose();
+    try {
+      sessionStorage.setItem("from-work-carousel-page", String(worksNavState.worksCarouselPage));
+      sessionStorage.setItem("from-work-category", worksNavState.worksCategory);
+    } catch {}
     if (work.slug === "socks-detective") {
       navigate(`/works/${work.slug}/read`, { state: worksNavState });
       return;
@@ -257,7 +261,7 @@ const WorkDetailModal = ({
               backdropFilter: "blur(14px) saturate(1.1)",
               boxShadow: "0 12px 28px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(194,160,130,0.26)",
               fontSize: "21px",
-              fontWeight: 800,
+              fontWeight: 600,
               lineHeight: 1,
               textShadow: "0 1px 0 rgba(255,255,255,0.72), 0 0 10px rgba(255,255,255,0.28)",
             }}
@@ -272,7 +276,7 @@ const WorkDetailModal = ({
             <span className="text-muted-foreground opacity-30">·</span>
             <span className="text-xs text-muted-foreground">{work.year}</span>
           </div>
-          <h3 className="text-xl font-black text-foreground mb-2">{work.title}</h3>
+          <h3 className="text-xl font-semibold text-foreground mb-2">{work.title}</h3>
           <p className="text-sm text-muted-foreground leading-relaxed mb-4">{work.subtitle}</p>
           <div className="p-4 rounded-xl mb-5 text-sm text-muted-foreground leading-relaxed" style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}>
             {work.desc}
@@ -375,7 +379,9 @@ const ProjectCard = ({
     currentWork.slug === "socks-detective" ? "center 64%"
     : currentWork.slug === "bijie-ai"      ? "center 58%"
     : currentWork.slug === "aigc"          ? "60% center"
+    : currentWork.slug === "poster-collection" ? "center"
     : "center";
+  const coverFit = "cover";
 
   return (
     <div
@@ -438,7 +444,7 @@ const ProjectCard = ({
                 : isMotionRules
                   ? `linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 36%, rgba(0,0,0,0.10) 100%), url(${currentWork.coverImage})`
                   : `linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 38%, rgba(0,0,0,0.16) 100%), url(${currentWork.coverImage})`,
-              backgroundSize: "cover",
+              backgroundSize: coverFit,
               backgroundPosition: coverPos,
               filter: isMotionRules ? (isDark ? "brightness(1.08) contrast(1.02)" : "brightness(1.1) contrast(1.01)") : "none",
               transform: isHovered ? "scale(1.03)" : "scale(1)",
@@ -539,7 +545,7 @@ const ProjectCard = ({
             alignItems: "center",
             gap: "5px",
             color: detailButtonColor,
-            fontWeight: 700,
+            fontWeight: 600,
             fontSize: "12px",
             letterSpacing: "0.01em",
             background: detailButtonBg,
@@ -620,17 +626,19 @@ const WorksCarousel = ({ works, categoryKey }: { works: WorkItem[]; categoryKey:
     setCurrentPage((prev) => Math.min(prev, Math.max(0, pageCount - 1)));
   }, [pageCount]);
 
-  // Restore page from router location state (for back-navigation)
+  // Restore page from sessionStorage (for back-navigation)
   useLayoutEffect(() => {
-    const state = location.state as { scrollTo?: string; worksCarouselPage?: number; worksCategory?: string } | null;
-    if (
-      state?.scrollTo !== "works" ||
-      typeof state.worksCarouselPage !== "number" ||
-      typeof state.worksCategory !== "string" ||
-      state.worksCategory !== categoryKey
-    ) return;
-    setCurrentPage(Math.min(pageCount - 1, Math.max(0, state.worksCarouselPage)));
-  }, [location.key, categoryKey, pageCount, location.state]);
+    try {
+      const savedPage = sessionStorage.getItem("from-work-carousel-page");
+      const savedCategory = sessionStorage.getItem("from-work-category");
+      if (savedPage && savedCategory === categoryKey) {
+        const targetPage = parseInt(savedPage, 10);
+        setCurrentPage(Math.min(pageCount - 1, Math.max(0, targetPage)));
+      }
+    } catch {
+      // ignore
+    }
+  }, [categoryKey, pageCount]);
 
   // Scale stage to container width
   useEffect(() => {
@@ -731,6 +739,11 @@ const WorksCarousel = ({ works, categoryKey }: { works: WorkItem[]; categoryKey:
   };
 
   const handleCardClick = (work: WorkItem) => {
+    // Save carousel state before navigating away
+    try {
+      sessionStorage.setItem("from-work-carousel-page", String(currentPage));
+      sessionStorage.setItem("from-work-category", categoryKey);
+    } catch {}
     if (work.slug === "socks-detective") { navigate("/works/socks-detective/read", { state: getNavState() }); return; }
     if (work.slug) { navigate(`/works/${work.slug}`, { state: getNavState() }); return; }
     openDetails(work);
@@ -790,7 +803,7 @@ const WorksCarousel = ({ works, categoryKey }: { works: WorkItem[]; categoryKey:
 
   return (
     <>
-      <div className="relative" ref={carouselRef}>
+      <div className="relative" id="works-carousel" ref={carouselRef}>
         {/* Desktop — grid: [prev] [stage] [next] */}
         <div
           className="mx-auto hidden w-full max-w-[1400px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-2 pt-1 md:grid sm:gap-5 sm:px-6"
@@ -1002,9 +1015,19 @@ const Works = () => {
   const CATEGORIES = siteContent.works.categories;
   const ALL_WORKS = siteContent.works.items;
   const { ref, inView } = useInView();
+  const location = useLocation();
   const [activeCategory, setActiveCategory] = useState(lang === "en" ? "All" : "全部");
   const prevLang = useRef(lang);
 
+  // 从 sessionStorage 恢复分类（Index 组件体在渲染前已同步清理/保留数据）
+  useLayoutEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("from-work-category");
+      if (saved) setActiveCategory(saved);
+    } catch {}
+  }, []);
+
+  // 语言切换时重置分类
   useLayoutEffect(() => {
     if (prevLang.current !== lang) {
       prevLang.current = lang;
@@ -1019,12 +1042,12 @@ const Works = () => {
     <section
       id="works"
       ref={ref}
-      className="relative py-20 md:py-28"
-      style={{ background: "var(--works-section-bg)", transition: "background 420ms ease" }}
+      className="relative section-padding"
+      style={{ background: "var(--works-section-bg)", transition: "background 500ms ease" }}
     >
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, var(--primary), transparent)" }} />
 
-      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 md:px-12">
+      <div className="container-standard">
         <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-12">
           <div>
             <span className="text-xs text-primary tracking-[0.3em] uppercase font-medium">Portfolio</span>
@@ -1081,7 +1104,7 @@ const Works = () => {
 
         <div className={`transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
           {filtered.length > 0
-            ? <WorksCarousel works={filtered} categoryKey={activeCategory} />
+            ? <WorksCarousel key={activeCategory} works={filtered} categoryKey={activeCategory} />
             : <div className="text-center py-20 text-muted-foreground">{siteContent.works.emptyText}</div>}
         </div>
 

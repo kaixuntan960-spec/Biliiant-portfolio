@@ -44,7 +44,7 @@ const parsePeriodStart = (period: string) => {
 };
 
 const rgbaFromRgb = (rgb: string, alpha: number) => {
-  const m = rgb.match(/rgb\(\s*(\d+),\s*(\d+),\s*(\d+)\s*\)/i);
+  const m = rgb.match(/rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)[\s,)]/i);
   if (!m) return rgb;
   return `rgba(${m[1]}, ${m[2]}, ${m[3]}, ${alpha})`;
 };
@@ -79,7 +79,7 @@ const ExperienceModal = ({
   return (
     <div
       className="fixed inset-0 z-[8000] flex items-center justify-center"
-      style={{ background: "var(--modal-backdrop)", backdropFilter: "blur(20px)", padding: "var(--space-6)", transition: "background 420ms ease" }}
+      style={{ background: "var(--modal-backdrop)", backdropFilter: "blur(20px)", padding: "var(--space-6)", transition: "background 500ms ease" }}
       onClick={onClose}
     >
       <div
@@ -114,7 +114,7 @@ const ExperienceModal = ({
                 {exp.emoji}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-                <h3 className="font-black text-foreground" style={{ fontSize: "var(--text-xl)" }}>
+                <h3 className="font-semibold text-foreground" style={{ fontSize: "var(--text-xl)" }}>
                   {exp.company}
                 </h3>
                 <p className="font-medium" style={{ fontSize: "var(--text-sm)", color: modalAccent }}>
@@ -162,7 +162,7 @@ const ExperienceModal = ({
                 <div className="flex justify-center" style={{ marginBottom: "var(--space-1)", color: modalAccent }}>
                   {getStatIcon(stat.icon)}
                 </div>
-                <div className="font-black text-foreground" style={{ fontSize: "var(--text-lg)" }}>
+                <div className="font-semibold text-foreground" style={{ fontSize: "var(--text-lg)" }}>
                   {stat.value}
                 </div>
                 <div className="text-muted-foreground" style={{ fontSize: "var(--text-xs)", marginTop: "2px" }}>
@@ -246,7 +246,7 @@ const HonorModal = ({
   return (
     <div
       className="fixed inset-0 z-[8000] flex items-center justify-center"
-      style={{ background: "var(--modal-backdrop)", backdropFilter: "blur(20px)", padding: "var(--space-6)", transition: "background 420ms ease" }}
+      style={{ background: "var(--modal-backdrop)", backdropFilter: "blur(20px)", padding: "var(--space-6)", transition: "background 500ms ease" }}
       onClick={onClose}
     >
       <div
@@ -279,7 +279,7 @@ const HonorModal = ({
               <div className="text-muted-foreground tracking-widest uppercase" style={{ fontSize: "var(--text-xs)", marginBottom: "6px" }}>
                 {lang === "en" ? "Honors" : "荣誉奖项"}
               </div>
-              <h3 className="font-black text-foreground" style={{ fontSize: "var(--text-xl)", lineHeight: 1.2 }}>
+              <h3 className="font-semibold text-foreground" style={{ fontSize: "var(--text-xl)", lineHeight: 1.2 }}>
                 {honor.title}
               </h3>
               <div className="text-muted-foreground" style={{ marginTop: "12px", fontSize: "var(--text-xs)", lineHeight: 1.5 }}>
@@ -438,17 +438,8 @@ const ExperienceTimelineCard = ({
 }) => {
   const { lang } = useI18n();
   const { resolvedTheme } = useThemeMode();
+  const isDark = resolvedTheme === "dark";
   const [isMobile, setIsMobile] = useState(false);
-  const isYellowTheme = exp.colorHex === "rgb(232, 255, 71)";
-  const timelineAccent = isYellowTheme ? "rgb(186, 197, 132)" : exp.colorHex;
-  const roleAccent = isYellowTheme ? "rgba(0, 170, 255, 1)" : timelineAccent;
-  const flipHintAccent = isYellowTheme ? "rgba(0, 145, 255, 1)" : timelineAccent;
-  const markerAccent = isYellowTheme ? "rgba(0, 191, 255, 1)" : exp.colorHex;
-  const markerBorderAccent = isYellowTheme ? "rgba(31, 199, 255, 1)" : markerAccent;
-  const flipCardHeaderBg = isYellowTheme ? "rgba(103, 168, 254, 0.1)" : rgbaFromRgb(exp.colorHex, 0.1);
-  const flipCardHeaderBorder = isYellowTheme ? "rgba(51, 167, 255, 0.2)" : rgbaFromRgb(exp.colorHex, 0.2);
-  const flipStoryBg = isYellowTheme ? "rgba(71, 133, 255, 0.08)" : rgbaFromRgb(exp.colorHex, 0.08);
-  const flipStoryBorder = isYellowTheme ? "rgba(169, 206, 254, 0.2)" : flipCardHeaderBorder;
   const [flipped, setFlipped] = useState(false);
   const [hovered, setHovered] = useState(false);
 
@@ -460,249 +451,186 @@ const ExperienceTimelineCard = ({
     return () => mq.removeEventListener?.("change", apply);
   }, []);
 
-  const flipBackStyle =
-    resolvedTheme === "light"
-      ? {
-          background: `linear-gradient(135deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.2) 46%, var(--card) 100%)`,
-          border: `1px solid rgba(255,255,255,0.2)`,
-          boxShadow: `0 16px 42px rgba(0,0,0,0.1)`,
-          backdropFilter: "blur(20px) saturate(1.35)",
-        }
-      : {
-          background: `linear-gradient(135deg, ${rgbaFromRgb(timelineAccent, 0.04)} 0%, rgba(255,255,255,0.01) 48%, var(--card) 100%)`,
-          border: `1px solid ${rgbaFromRgb(timelineAccent, 0.14)}`,
-          boxShadow: "none",
-          backdropFilter: "blur(16px) saturate(1.12)",
-        };
-
-  const detailsBtnStyle = {
-    background:
-      resolvedTheme === "light"
-        ? "linear-gradient(135deg, rgba(124,58,237,0.92) 0%, rgba(99,102,241,0.92) 100%)"
-        : isYellowTheme
-          ? "rgba(103, 168, 254, 0.14)"
-          : rgbaFromRgb(timelineAccent, 0.14),
-    border:
-      resolvedTheme === "light"
-        ? "1px solid rgba(255,255,255,0.24)"
-        : isYellowTheme
-          ? "1px solid rgba(51, 167, 255, 0.24)"
-          : `1px solid ${rgbaFromRgb(timelineAccent, 0.24)}`,
-    color: resolvedTheme === "light" ? "rgb(255,255,255)" : "var(--foreground)",
-    backdropFilter: "blur(10px)",
-    boxShadow: resolvedTheme === "light" ? "0 8px 18px rgba(99,102,241,0.24)" : "none",
-  };
+  const accent = exp.colorHex === "rgb(232, 255, 71)" ? "rgba(0, 170, 255, 1)" : exp.colorHex;
 
   return (
-    <div className={`transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`} style={{ transitionDelay: `${index * 0.15}s` }}>
-      <div className="flex items-start" style={{ gap: "var(--space-6)" }}>
-        <div className="flex flex-col items-center flex-shrink-0" style={{ width: "96px" }}>
+    <div
+      className={`transition-all duration-700 ${inView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"}`}
+      style={{ transitionDelay: `${index * 0.18}s` }}
+    >
+      <div className="flex items-stretch" style={{ gap: "0" }}>
+        {/* Timeline column */}
+        <div className="flex flex-col items-center flex-shrink-0" style={{ width: "40px" }}>
           <div
-            className="flex items-center justify-center z-10 transition-all duration-300"
+            className="transition-all duration-300"
             style={{
-              width: "48px",
-              height: "48px",
-              borderRadius: "var(--radius-full)",
-              background: flipped ? markerAccent : "transparent",
-              border: `2px solid ${markerBorderAccent}`,
-              transform: hovered ? "scale(1.1)" : "scale(1)",
-              boxShadow: hovered ? `0 0 20px ${rgbaFromRgb(markerBorderAccent, 0.26)}` : "none",
-              fontSize: "18px",
+              width: hovered ? "14px" : "10px",
+              height: hovered ? "14px" : "10px",
+              borderRadius: "50%",
+              background: accent,
+              boxShadow: hovered ? `0 0 12px ${rgbaFromRgb(accent, 0.5)}` : "none",
+              marginTop: "20px",
             }}
-          >
-            {flipped ? <span style={{ color: "rgb(0,0,0)", fontSize: "var(--text-xs)" }}>★</span> : <span>{exp.emoji}</span>}
-          </div>
+          />
           {!isLast && (
             <div
-              className="w-px"
+              className="w-px flex-1"
               style={{
-                minHeight: "48px",
-                flex: 1,
-                marginTop: "var(--space-2)",
-                background: `linear-gradient(to bottom, ${rgbaFromRgb(timelineAccent, 0.5)}, transparent)`,
+                marginTop: "8px",
+                background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
               }}
             />
           )}
         </div>
 
+        {/* Connector line */}
+        <div className="flex-shrink-0 flex items-start" style={{ width: "20px", paddingTop: "25px" }}>
+          <div style={{ width: "100%", height: "1px", background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)" }} />
+        </div>
+
+        {/* Card */}
         <div
           className="flex-1 cursor-pointer"
-          style={{ perspective: isMobile ? "none" : "1000px", marginBottom: "var(--space-6)" }}
+          style={{ perspective: isMobile ? "none" : "1200px", marginBottom: "24px" }}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
           onClick={() => {
-            if (isMobile) {
-              onClick();
-              return;
-            }
-            try {
-              window.dispatchEvent(new CustomEvent("sfx", { detail: { kind: "flip" } }));
-            } catch {
-              // ignore
-            }
+            if (isMobile) { onClick(); return; }
             setFlipped((f) => !f);
           }}
         >
           <div
-            className="relative w-full transition-all duration-500"
+            className="relative w-full"
             style={{
               transformStyle: isMobile ? "flat" : "preserve-3d",
               transform: isMobile ? "none" : flipped ? "rotateY(180deg)" : "rotateY(0deg)",
-              minHeight: "180px",
+              transition: "transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1)",
             }}
           >
+            {/* FRONT */}
             <div
-              className="absolute inset-0 overflow-hidden"
               style={{
                 backfaceVisibility: "hidden",
                 WebkitBackfaceVisibility: "hidden",
-                background: "var(--card)",
-                borderRadius: "var(--radius-2xl)",
-                padding: "var(--space-6)",
-                border: `1px solid ${hovered ? `${exp.colorHex}50` : "var(--border)"}`,
-                boxShadow: hovered ? `0 8px 40px ${exp.colorHex}15` : "none",
-                transition: "border-color 0.3s, box-shadow 0.3s",
-                height: "180px",
-                display: "flex",
-                flexDirection: "column",
+                borderRadius: "16px",
+                padding: "24px",
+                background: isDark ? "var(--card)" : "#ffffff",
+                border: `1px solid ${hovered ? rgbaFromRgb(accent, 0.3) : (isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)")}`,
+                boxShadow: hovered
+                  ? (isDark ? `0 8px 30px ${rgbaFromRgb(accent, 0.08)}` : "0 8px 30px rgba(0,0,0,0.06)")
+                  : (isDark ? "none" : "0 2px 8px rgba(0,0,0,0.02)"),
+                transform: hovered ? "translateY(-2px)" : "translateY(0)",
+                transition: "border-color 0.3s, box-shadow 0.3s, transform 0.3s",
               }}
             >
-              <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: markerBorderAccent, borderRadius: "4px 0 0 4px" }} />
-              <div className="flex items-start justify-between" style={{ gap: "var(--space-4)", marginBottom: "var(--space-3)" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0 }}>
-                  <h4 className="font-bold text-foreground" style={{ fontSize: "var(--text-md)", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {/* Front header */}
+              <div className="flex items-start justify-between" style={{ marginBottom: "12px" }}>
+                <div style={{ minWidth: 0 }}>
+                  <h4 className="font-semibold text-foreground" style={{ fontSize: "var(--text-md)", lineHeight: 1.3, marginBottom: "4px" }}>
                     {exp.company}
                   </h4>
-                  <p className="font-medium" style={{ fontSize: "var(--text-sm)", color: roleAccent, lineHeight: 1.2 }}>
+                  <p className="font-medium" style={{ fontSize: "var(--text-sm)", color: accent }}>
                     {exp.role}
                   </p>
                 </div>
-                <div className="text-right flex-shrink-0" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
-                  <div className="text-foreground" style={{ fontSize: "var(--text-xs)", letterSpacing: "0.04em", opacity: resolvedTheme === "dark" ? 0.9 : 0.72 }}>
-                    {exp.period.replace(/\s+/g, " ")}
-                  </div>
-                  <div className="flex items-center justify-end text-foreground" style={{ gap: "var(--space-1)", fontSize: "var(--text-xs)", opacity: resolvedTheme === "dark" ? 0.9 : 0.72 }}>
-                    <MapPin size={10} /> {exp.location}
+                <div className="flex-shrink-0 text-right" style={{ fontSize: "var(--text-xs)", color: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.4)", lineHeight: 1.6 }}>
+                  <div>{exp.period.replace(/\s+/g, " ")}</div>
+                  <div className="flex items-center justify-end" style={{ gap: "3px" }}>
+                    <MapPin size={9} /> {exp.location}
                   </div>
                 </div>
               </div>
 
-              <p className="text-foreground leading-relaxed" style={{ fontSize: "var(--text-sm)", marginBottom: "var(--space-4)", flex: 1, overflow: "hidden", opacity: resolvedTheme === "dark" ? 0.92 : 0.8 }}>
+              {/* Description */}
+              <p className="text-foreground leading-relaxed" style={{ fontSize: "var(--text-sm)", marginBottom: "16px", opacity: isDark ? 0.7 : 0.6 }}>
                 {exp.desc}
               </p>
 
-              <div className="flex items-center justify-between" style={{ gap: "var(--space-3)" }}>
-                <div className="flex flex-wrap" style={{ gap: "var(--space-2)" }}>
+              {/* Tags + flip hint */}
+              <div className="flex items-center justify-between">
+                <div className="flex flex-wrap" style={{ gap: "6px" }}>
                   {exp.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="text-muted-foreground border border-border"
-                      style={{ fontSize: "var(--text-xs)", padding: "3px 10px", borderRadius: "var(--radius-full)" }}
+                      style={{
+                        fontSize: "var(--text-xs)",
+                        padding: "3px 10px",
+                        borderRadius: "20px",
+                        background: rgbaFromRgb(accent, isDark ? 0.1 : 0.06),
+                        color: accent,
+                      }}
                     >
                       {tag}
                     </span>
                   ))}
                 </div>
-                <div className="flex items-center flex-shrink-0" style={{ gap: "var(--space-1)", fontSize: "var(--text-xs)", color: flipHintAccent }}>
-                  {lang === "en" ? "Flip for story" : "翻转查看故事"} <ChevronRight size={12} />
+                <div
+                  className="flex items-center flex-shrink-0 transition-opacity duration-300"
+                  style={{ gap: "4px", fontSize: "var(--text-xs)", color: accent, opacity: hovered ? 0.8 : 0 }}
+                >
+                  {lang === "en" ? "Flip" : "翻转"} <ChevronRight size={11} />
                 </div>
               </div>
             </div>
 
-            {!isMobile ? (
+            {/* BACK */}
+            {!isMobile && (
               <div
-                className="absolute inset-0 overflow-hidden"
+                className="absolute inset-0"
                 style={{
                   backfaceVisibility: "hidden",
                   WebkitBackfaceVisibility: "hidden",
                   transform: "rotateY(180deg)",
-                  borderRadius: "var(--radius-2xl)",
-                  padding: "var(--space-6)",
-                  ...flipBackStyle,
-                  height: "180px",
+                  borderRadius: "16px",
+                  padding: "24px",
+                  background: isDark ? "var(--card)" : "#ffffff",
+                  border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
+                  boxShadow: isDark ? "none" : "0 4px 20px rgba(0,0,0,0.04)",
+                  backdropFilter: "blur(12px)",
                 }}
               >
-              <div
-                className="flex items-center justify-between"
-                style={{
-                  marginBottom: "var(--space-4)",
-                  padding: "10px 12px",
-                  borderRadius: "var(--radius-lg)",
-                  background: flipCardHeaderBg,
-                  border: `1px solid ${flipCardHeaderBorder}`,
-                }}
-              >
-                <div className="flex items-center" style={{ gap: "var(--space-2)" }}>
-                  <span style={{ fontSize: "20px" }}>{exp.emoji}</span>
-                  <h4 className="font-bold text-foreground" style={{ fontSize: "var(--text-base)" }}>
-                    {exp.company}
-                  </h4>
+                {/* Back header */}
+                <div className="flex items-center justify-between" style={{ marginBottom: "16px" }}>
+                  <div className="flex items-center" style={{ gap: "8px" }}>
+                    <span style={{ fontSize: "18px" }}>{exp.emoji}</span>
+                    <h4 className="font-semibold text-foreground" style={{ fontSize: "var(--text-sm)" }}>
+                      {exp.company}
+                    </h4>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onClick(); }}
+                    className="flex items-center transition-all hover:scale-105"
+                    style={{
+                      gap: "4px",
+                      padding: "5px 12px",
+                      borderRadius: "20px",
+                      fontSize: "var(--text-xs)",
+                      fontWeight: 500,
+                      background: rgbaFromRgb(accent, isDark ? 0.12 : 0.08),
+                      color: accent,
+                    }}
+                  >
+                    <ExternalLink size={10} /> {lang === "en" ? "Details" : "详情"}
+                  </button>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onClick();
-                  }}
-                  className="flex items-center font-medium transition-all hover:scale-105"
-                  style={{
-                    gap: "var(--space-1)",
-                    padding: "6px 12px",
-                    borderRadius: "var(--radius-full)",
-                    fontSize: "var(--text-xs)",
-                    ...detailsBtnStyle,
-                  }}
-                >
-                  <ExternalLink size={10} /> {lang === "en" ? "Details" : "查看详情"}
-                </button>
+
+                {/* Story */}
+                <p className="text-foreground leading-relaxed" style={{ fontSize: "var(--text-xs)", marginBottom: "12px", opacity: isDark ? 0.75 : 0.65, borderLeft: `2px solid ${rgbaFromRgb(accent, 0.3)}`, paddingLeft: "12px" }}>
+                  {exp.story.slice(0, 120)}...
+                </p>
+
+                {/* Achievement */}
+                <div className="flex items-center" style={{ gap: "8px", fontSize: "var(--text-xs)" }}>
+                  <span>🏆</span>
+                  <span className="text-foreground" style={{ opacity: 0.8 }}>{exp.achievement}</span>
+                </div>
+
+                {/* Flip back hint */}
+                <div className="text-center" style={{ marginTop: "12px", fontSize: "var(--text-xs)", opacity: 0.4, color: "var(--foreground)" }}>
+                  {lang === "en" ? "Click to flip back" : "点击翻转回来"}
+                </div>
               </div>
-              <div
-                className="text-foreground leading-relaxed"
-                style={{
-                  padding: "var(--space-3) var(--space-4)",
-                  borderRadius: "var(--radius-lg)",
-                  marginBottom: "var(--space-3)",
-                  fontSize: "var(--text-xs)",
-                  opacity: resolvedTheme === "dark" ? 0.96 : 0.86,
-                  background:
-                    resolvedTheme === "light"
-                      ? "linear-gradient(135deg, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0.22) 100%)"
-                      : flipStoryBg,
-                  border:
-                    resolvedTheme === "light"
-                      ? "1px solid rgba(255,255,255,0.28)"
-                      : `1px solid ${flipStoryBorder}`,
-                }}
-              >
-                <span style={{ fontSize: "14px" }}>💬 </span>
-                {exp.story.slice(0, 100)}...
-              </div>
-              <div
-                className="flex items-center"
-                style={{
-                  gap: "var(--space-2)",
-                  padding: "var(--space-3) var(--space-4)",
-                  borderRadius: "var(--radius-lg)",
-                  fontSize: "var(--text-xs)",
-                  background:
-                    resolvedTheme === "light"
-                      ? "linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.24) 100%)"
-                      : flipCardHeaderBg,
-                  border:
-                    resolvedTheme === "light"
-                      ? "1px solid rgba(255,255,255,0.3)"
-                      : `1px solid ${flipCardHeaderBorder}`,
-                }}
-              >
-                <span>🏆</span>
-                <span className="text-foreground" style={{ opacity: 0.9 }}>
-                  {exp.achievement}
-                </span>
-              </div>
-              <div className="text-center text-foreground" style={{ marginTop: "var(--space-3)", fontSize: "var(--text-xs)", opacity: resolvedTheme === "dark" ? 0.84 : 0.66 }}>
-                {lang === "en" ? "Click to flip back · Click “Details” for more" : "点击再次翻转 · 点击「查看详情」了解更多"}
-              </div>
-              </div>
-            ) : null}
+            )}
           </div>
         </div>
       </div>
@@ -732,8 +660,8 @@ const About = () => {
   const sortedExperience = [...EXPERIENCE].sort((a, b) => parsePeriodStart(b.period) - parsePeriodStart(a.period));
 
   return (
-    <section id="about" className="relative overflow-hidden" style={{ background: "var(--background)", paddingTop: "var(--space-24)", paddingBottom: "var(--space-24)" }}>
-      <div style={{ maxWidth: "var(--max-w-content)", margin: "0 auto", paddingLeft: "var(--space-12)", paddingRight: "var(--space-12)" }}>
+    <section id="about" className="relative overflow-hidden section-padding" style={{ background: "var(--background)" }}>
+      <div className="container-standard">
         <div className="flex items-end justify-between" style={{ marginBottom: "var(--space-12)" }}>
           <div>
             <p className="label-eyebrow" style={{ marginBottom: "var(--space-3)" }}>
@@ -790,7 +718,7 @@ const About = () => {
                     onError={() => setAvatarTryIndex((v) => Math.min(v + 1, avatarCandidates.length))}
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center font-black text-primary-foreground" style={{ fontSize: "36px" }}>
+                  <div className="absolute inset-0 flex items-center justify-center font-semibold text-primary-foreground" style={{ fontSize: "36px" }}>
                     {siteContent.about.profile.avatarChar}
                   </div>
                 )}
@@ -803,7 +731,7 @@ const About = () => {
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="font-bold text-foreground" style={{ fontSize: "var(--text-xl)", marginBottom: "var(--space-1)" }}>
+              <h3 className="font-semibold text-foreground" style={{ fontSize: "var(--text-xl)", marginBottom: "var(--space-1)" }}>
                 {siteContent.about.profile.name}
               </h3>
               <p className="text-primary" style={{ fontSize: "var(--text-sm)", marginBottom: "var(--space-4)" }}>
@@ -852,7 +780,7 @@ const About = () => {
             <div className="flex items-center justify-center flex-shrink-0" style={{ width: "40px", height: "40px", borderRadius: "var(--radius-lg)", background: "rgba(168,85,247,0.12)" }}>
               <GraduationCap size={18} className="text-primary" />
             </div>
-            <h3 className="font-bold text-foreground" style={{ fontSize: "var(--text-xl)" }}>
+            <h3 className="font-semibold text-foreground" style={{ fontSize: "var(--text-xl)" }}>
               {lang === "en" ? "Education" : "教育经历"}
             </h3>
             <span className="flex-1 h-px ml-2" style={{ background: "var(--border)" }} />
@@ -892,7 +820,7 @@ const About = () => {
                       </span>
                     </div>
                     <h4
-                      className="font-black text-foreground"
+                      className="font-semibold text-foreground"
                       style={{
                         fontSize: "clamp(16px, 1.05vw, 20px)",
                         lineHeight: 1.15,
@@ -952,7 +880,7 @@ const About = () => {
             <div className="flex items-center justify-center flex-shrink-0" style={{ width: "40px", height: "40px", borderRadius: "var(--radius-lg)", background: "var(--accent-soft)" }}>
               <Award size={18} style={{ color: "var(--accent-strong)" }} />
             </div>
-            <h3 className="font-bold text-foreground" style={{ fontSize: "var(--text-xl)" }}>
+            <h3 className="font-semibold text-foreground" style={{ fontSize: "var(--text-xl)" }}>
               {lang === "en" ? "Honors" : "荣誉奖项"}
             </h3>
             <span className="flex-1 h-px ml-2" style={{ background: "var(--border)" }} />
@@ -986,7 +914,7 @@ const About = () => {
                     mixBlendMode: "screen",
                   }}
                 />
-                <div className="flex items-center justify-center flex-shrink-0 font-bold group-hover:scale-110 transition-transform duration-300" style={{ width: "32px", height: "32px", borderRadius: "var(--radius-full)", background: "var(--accent-soft)", color: "var(--accent-strong)", fontSize: "var(--text-sm)" }}>
+                <div className="flex items-center justify-center flex-shrink-0 font-semibold group-hover:scale-110 transition-transform duration-300" style={{ width: "32px", height: "32px", borderRadius: "var(--radius-full)", background: "var(--accent-soft)", color: "var(--accent-strong)", fontSize: "var(--text-sm)" }}>
                   {i + 1}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
@@ -1004,36 +932,22 @@ const About = () => {
 
         <div id="experience" ref={expRef}>
           <div className="flex items-center" style={{ gap: "var(--space-3)", marginBottom: "var(--space-4)" }}>
-            <div className="flex items-center justify-center flex-shrink-0" style={{ width: "40px", height: "40px", borderRadius: "var(--radius-lg)", background: "rgba(0,212,170,0.12)" }}>
-              <Briefcase size={18} style={{ color: "rgb(0, 212, 170)" }} />
+            <div className="flex items-center justify-center flex-shrink-0" style={{ width: "40px", height: "40px", borderRadius: "var(--radius-lg)", background: "rgba(168,85,247,0.12)" }}>
+              <Briefcase size={18} style={{ color: "rgb(168, 85, 247)" }} />
             </div>
-            <h3 className="font-bold text-foreground" style={{ fontSize: "var(--text-xl)" }}>
+            <h3 className="font-semibold text-foreground" style={{ fontSize: "var(--text-xl)" }}>
               {lang === "en" ? "Experience" : "实习经历"}
             </h3>
             <span className="flex-1 h-px ml-2" style={{ background: "var(--border)" }} />
           </div>
 
-          <div className="flex items-center w-fit" style={{ gap: "var(--space-2)", marginBottom: "var(--space-6)", padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-lg)", background: "rgba(0,212,170,0.06)", border: "1px solid rgba(0,212,170,0.2)", color: "rgb(0, 212, 170)", fontSize: "var(--text-xs)" }}>
+          <div className="flex items-center w-fit" style={{ gap: "var(--space-2)", marginBottom: "var(--space-6)", fontSize: "var(--text-xs)", color: "var(--muted-foreground)" }}>
             <span>👆</span>
             <span>{siteContent.about.experienceHint}</span>
           </div>
 
           <div>
             <div className="relative">
-              <div
-                className="absolute"
-                style={{
-                  left: "24px",
-                  top: "4px",
-                  bottom: "8px",
-                  width: "2px",
-                  borderRadius: "999px",
-                  background:
-                    "linear-gradient(to bottom, transparent 0%, rgba(168,85,247,0.55) 14%, rgba(0,212,170,0.45) 52%, rgba(232,255,71,0.35) 86%, transparent 100%)",
-                  opacity: 0.9,
-                  pointerEvents: "none",
-                }}
-              />
               {sortedExperience.map((exp, i) => (
                 <ExperienceTimelineCard
                   key={exp.company}

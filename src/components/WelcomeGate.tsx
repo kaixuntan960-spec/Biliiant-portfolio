@@ -858,7 +858,7 @@ const WelcomeGate = ({ onComplete, allowStorageAutoComplete = true }: WelcomeGat
             </div>
           </div>
 
-          <h2 className="text-center font-black text-foreground mb-2" style={{ fontSize: "var(--text-xl)" }}>
+          <h2 className="text-center font-semibold text-foreground mb-2" style={{ fontSize: "var(--text-xl)" }}>
             {title}
           </h2>
           <p className="text-center text-muted-foreground mb-6" style={{ fontSize: "var(--text-xs)", lineHeight: "var(--leading-relaxed)" }}>

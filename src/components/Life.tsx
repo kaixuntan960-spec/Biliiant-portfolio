@@ -337,6 +337,12 @@ const Life = () => {
   useEffect(() => {
     setCanScrollLeft(currentSlide > 0);
     setCanScrollRight(currentSlide < groupedPosts.length - 1);
+  }, [currentSlide, groupedPosts]);
+
+  const prevSlideRef = useRef(currentSlide);
+  useEffect(() => {
+    if (prevSlideRef.current === currentSlide) return;
+    prevSlideRef.current = currentSlide;
     const active = groupedPosts[currentSlide];
     if (!active) return;
     postCardRefs.current[active.id]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
@@ -467,7 +473,7 @@ const Life = () => {
   };
 
   return (
-    <section id="life" ref={ref} className="relative overflow-hidden" style={{ background: "var(--life-section-bg)", paddingTop: "var(--space-16)", paddingBottom: "var(--space-16)", transition: "background 420ms ease" }}>
+    <section id="life" ref={ref} className="relative overflow-hidden section-padding" style={{ background: "var(--life-section-bg)", transition: "background 500ms ease" }}>
       <div className="absolute top-0 left-0 right-0" style={{ height: "1px", background: "linear-gradient(90deg, transparent, rgb(255, 107, 157), transparent)" }} />
 
       <div className="container-standard">
@@ -543,7 +549,7 @@ const Life = () => {
                   background: "var(--overlay-strong)",
                   gap: "var(--space-3)",
                   padding: "var(--space-6)",
-                  transition: "background 420ms ease",
+                  transition: "background 500ms ease",
                 }}
               >
                 <div className="font-medium" style={{ padding: "var(--space-2) var(--space-5)", borderRadius: "var(--radius-full)", fontSize: "var(--text-xs)", background: "rgba(255,107,157,0.12)", color: "rgb(255, 107, 157)", border: "1px solid rgba(255,107,157,0.25)" }}>
@@ -833,7 +839,7 @@ const Life = () => {
                                   lineHeight: "14px",
                                   textAlign: "center",
                                   padding: "0 3px",
-                                  fontWeight: 700,
+                                  fontWeight: 600,
                                   boxShadow: "0 2px 6px rgba(255,107,157,0.45)",
                                 }}
                               >
@@ -854,7 +860,7 @@ const Life = () => {
                           <Bookmark size={17} style={{ fill: bookmarkedMap[post.id] ? "rgba(168,85,247,0.8)" : "transparent", color: "var(--foreground)" }} />
                         </button>
                       </div>
-                      <div style={{ fontSize: "10px", fontWeight: 700, marginBottom: "2px" }}>
+                      <div style={{ fontSize: "10px", fontWeight: 600, marginBottom: "2px" }}>
                         {likeCountMap[currentItem.id] ?? 0} {lang === "en" ? "likes" : "人点赞"}
                       </div>
                       <div className="text-muted-foreground" style={{ fontSize: "10px", lineHeight: 1.25 }}>
@@ -890,7 +896,7 @@ const Life = () => {
                               e.stopPropagation();
                               submitComment(post.id);
                             }}
-                            style={{ fontSize: "10px", color: "var(--primary)", fontWeight: 700 }}
+                            style={{ fontSize: "10px", color: "var(--primary)", fontWeight: 600 }}
                           >
                             {lang === "en" ? "Send" : "发送"}
                           </button>

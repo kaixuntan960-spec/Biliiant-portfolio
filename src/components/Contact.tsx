@@ -220,7 +220,7 @@ const FloatingQA = () => {
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.type === "a" ? "justify-start" : "justify-end"}`}>
                 {msg.type === "a" && (
-                  <div className="flex items-center justify-center mr-2 flex-shrink-0 font-black" style={{ width: "24px", height: "24px", marginTop: "2px", borderRadius: "var(--radius-full)", background: "var(--primary)", color: "var(--primary-foreground)", fontSize: "var(--text-xs)" }}>
+                  <div className="flex items-center justify-center mr-2 flex-shrink-0 font-semibold" style={{ width: "24px", height: "24px", marginTop: "2px", borderRadius: "var(--radius-full)", background: "var(--primary)", color: "var(--primary-foreground)", fontSize: "var(--text-xs)" }}>
                     谭
                   </div>
                 )}
@@ -241,7 +241,7 @@ const FloatingQA = () => {
             ))}
             {isTyping && (
               <div className="flex justify-start items-center" style={{ gap: "var(--space-2)" }}>
-                <div className="flex items-center justify-center font-black flex-shrink-0" style={{ width: "24px", height: "24px", borderRadius: "var(--radius-full)", background: "var(--primary)", color: "var(--primary-foreground)", fontSize: "var(--text-xs)" }}>
+                <div className="flex items-center justify-center font-semibold flex-shrink-0" style={{ width: "24px", height: "24px", borderRadius: "var(--radius-full)", background: "var(--primary)", color: "var(--primary-foreground)", fontSize: "var(--text-xs)" }}>
                   谭
                 </div>
                 <div style={{ padding: "8px 12px", borderRadius: "4px 16px 16px 16px", background: "var(--surface-2)" }}>
@@ -323,10 +323,10 @@ const Contact = () => {
 
   return (
     <>
-      <section id="contact" className="relative" style={{ background: "var(--background)", paddingTop: "var(--space-24)", paddingBottom: "var(--space-24)" }}>
+      <section id="contact" className="relative section-padding" style={{ background: "var(--background)" }}>
         <div className="absolute top-0 left-0 right-0" style={{ height: "1px", background: "linear-gradient(90deg, transparent, var(--accent), transparent)" }} />
 
-        <div style={{ maxWidth: "var(--max-w-content)", margin: "0 auto", paddingLeft: "var(--space-12)", paddingRight: "var(--space-12)" }}>
+        <div className="container-standard">
           <div style={{ marginBottom: "var(--space-12)" }}>
             <p className="label-eyebrow" style={{ marginBottom: "var(--space-3)" }}>
               Contact

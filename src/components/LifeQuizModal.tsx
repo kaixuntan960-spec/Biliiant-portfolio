@@ -240,7 +240,7 @@ const LifeQuizModal = ({ onPass = () => {}, onClose = () => {}, visible = false 
                   style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%)" }}
                 />
               </div>
-              <h3 className="text-2xl font-black text-foreground mb-3">{lang === "en" ? "Unlock Life" : "解锁个人生活"}</h3>
+              <h3 className="text-2xl font-semibold text-foreground mb-3">{lang === "en" ? "Unlock Life" : "解锁个人生活"}</h3>
               <p className="text-muted-foreground text-sm leading-relaxed mb-8">
                 {lang === "en" ? (
                   <>
@@ -382,11 +382,11 @@ const LifeQuizModal = ({ onPass = () => {}, onClose = () => {}, visible = false 
               <div className="text-6xl mb-4 animate-bounce">
                 {passed ? "🎉" : "😅"}
               </div>
-              <h3 className="text-2xl font-black text-foreground mb-2">
+              <h3 className="text-2xl font-semibold text-foreground mb-2">
                 {passed ? (lang === "en" ? "Unlocked!" : "恭喜通过！") : lang === "en" ? "Try again" : "再来一次吧～"}
               </h3>
               <div className="flex items-center justify-center gap-2 mb-4">
-                <span className="text-4xl font-black text-gradient">{correctCount}</span>
+                <span className="text-4xl font-semibold text-gradient">{correctCount}</span>
                 <span className="text-xl text-muted-foreground">/ {QUESTIONS.length}</span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed mb-8">

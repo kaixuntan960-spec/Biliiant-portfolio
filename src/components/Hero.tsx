@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { ArrowDown, Heart, Sparkles } from "lucide-react";
 import { useI18n } from "../i18n";
 import { useSiteContent } from "../i18n";
+import { useThemeMode } from "../theme";
 
 const Hero = () => {
   const { lang } = useI18n();
+  const { resolvedTheme } = useThemeMode();
+  const isDark = resolvedTheme === "dark";
   const siteContent = useSiteContent();
   const WORDS = siteContent.hero.rotatingWords;
   const [wordIndex, setWordIndex] = useState(0);
@@ -14,6 +17,8 @@ const Hero = () => {
   const heroRef = useRef<HTMLElement>(null);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(128);
+  const blobsRef = useRef<HTMLDivElement>(null);
+  const mousePosRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     const word = WORDS[wordIndex];
@@ -50,6 +55,27 @@ const Hero = () => {
 
   // CSS网格鼠标交互已移除（只保留3D人物模型和泡泡椅）
 
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    const rect = heroRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = (e.clientX - rect.left - rect.width / 2) / rect.width;
+    const y = (e.clientY - rect.top - rect.height / 2) / rect.height;
+    mousePosRef.current = { x, y };
+    if (blobsRef.current) {
+      const children = blobsRef.current.children as HTMLCollectionOf<HTMLElement>;
+      if (children[0]) children[0].style.transform = `translate(${x * -40}px, ${y * -30}px)`;
+      if (children[1]) children[1].style.transform = `translate(${x * 30}px, ${y * 25}px)`;
+      if (children[2]) children[2].style.transform = `translate(${x * -20}px, ${y * 35}px)`;
+    }
+  }, []);
+
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    el.addEventListener("mousemove", handleMouseMove);
+    return () => el.removeEventListener("mousemove", handleMouseMove);
+  }, [handleMouseMove]);
+
   const toggleLike = () => {
     setLiked((v) => {
       const next = !v;
@@ -73,10 +99,51 @@ const Hero = () => {
 
   return (
     <section
+      id="hero-section"
       ref={heroRef}
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
-      style={{ background: "var(--hero-bg)", transition: "background 420ms ease" }}
+      style={{ background: "var(--hero-bg)", transition: "background 500ms ease" }}
     >
+      {/* 流动渐变色块 */}
+      <div ref={blobsRef} className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div
+          className="absolute rounded-full blur-[140px] animate-blob-1 transition-transform duration-700 ease-out"
+          style={{
+            width: "50vw",
+            height: "50vw",
+            top: "-10%",
+            left: "-5%",
+            background: isDark
+              ? "radial-gradient(circle, rgba(168,85,247,0.18) 0%, rgba(124,58,237,0.06) 60%, transparent 100%)"
+              : "radial-gradient(circle, rgba(168,85,247,0.12) 0%, rgba(124,58,237,0.04) 60%, transparent 100%)",
+          }}
+        />
+        <div
+          className="absolute rounded-full blur-[120px] animate-blob-2 transition-transform duration-700 ease-out"
+          style={{
+            width: "40vw",
+            height: "40vw",
+            top: "40%",
+            right: "-10%",
+            background: isDark
+              ? "radial-gradient(circle, rgba(99,102,241,0.15) 0%, rgba(79,70,229,0.05) 60%, transparent 100%)"
+              : "radial-gradient(circle, rgba(99,102,241,0.1) 0%, rgba(79,70,229,0.03) 60%, transparent 100%)",
+          }}
+        />
+        <div
+          className="absolute rounded-full blur-[100px] animate-blob-3 transition-transform duration-700 ease-out"
+          style={{
+            width: "35vw",
+            height: "35vw",
+            bottom: "-5%",
+            left: "30%",
+            background: isDark
+              ? "radial-gradient(circle, rgba(232,255,71,0.06) 0%, rgba(192,132,252,0.08) 50%, transparent 100%)"
+              : "radial-gradient(circle, rgba(232,255,71,0.04) 0%, rgba(192,132,252,0.06) 50%, transparent 100%)",
+          }}
+        />
+      </div>
+
       {/* 粒子背景已移除 */}
 
       {/* 光晕背景已移除 */}
@@ -229,14 +296,14 @@ const Hero = () => {
               {siteContent.hero.stats.map((stat) => (
                 <div key={stat.label} className="flex flex-col" style={{ gap: "var(--space-1)" }}>
                   <span
-                    className="font-black"
+                    className="font-bold"
                     style={{
                       fontSize: "var(--text-2xl)",
                       background: "var(--hero-stat-gradient)",
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
                       backgroundClip: "text",
-                      transition: "background 420ms ease",
+                      transition: "background 500ms ease",
                     }}
                   >
                     {stat.num}

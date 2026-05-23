@@ -26,7 +26,27 @@
       "Bash(mkdir -p public/draco)",
       "Bash(cp node_modules/three/examples/jsm/libs/draco/draco_decoder.js public/draco/draco_decoder.js)",
       "Bash(cp node_modules/three/examples/jsm/libs/draco/draco_decoder.wasm public/draco/draco_decoder.wasm)",
-      "Bash(cp node_modules/three/examples/jsm/libs/draco/draco_wasm_wrapper.js public/draco/draco_wasm_wrapper.js)"
+      "Bash(cp node_modules/three/examples/jsm/libs/draco/draco_wasm_wrapper.js public/draco/draco_wasm_wrapper.js)",
+      "Bash(cd /tmp)",
+      "Bash(magick \"D:/xwechat_files/wxid_vpxf92z6i00a21_49c0/temp/RWTemp/2026-05/9e20f478899dc29eb19741386f9343c8/e4c15bdfd11af7f191e10cdc3b75aa05.png\" -resize 1200x1200 /tmp/screenshot_small.png)",
+      "Bash(powershell *)",
+      "Bash(npm *)",
+      "Bash(python *)",
+      "Bash(py *)",
+      "Bash(npx *)",
+      "WebFetch(domain:ai.studio)",
+      "Bash(rg -i \"\\\\.\\(png|jpe?g|webp\\)$\")",
+      "Bash(cmd.exe *)",
+      "Bash(powershell.exe *)",
+      "Bash(find \"C:\\\\Users\\\\Lenovo\\\\Desktop\" -maxdepth 3 -name \"*.glb\" -o -name \"*.gltf\" 2>/dev/null | head -30)",
+      "Read(//c/Users/Lenovo/Desktop/**)",
+      "Bash(netstat -ano)",
+      "WebSearch",
+      "Bash(grep -oP '.{0,100}\\(SocialLabel|social|label|Text|Float|Html|Trail\\)[^\\)]{0,300}')",
+      "Bash(grep -oP '.{0,200}cm=e.{0,400}')",
+      "Bash(grep -oP '.{0,200},cp.{0,200}')",
+      "Bash(grep -oP '.{0,100}const ch|let ch|var ch|,ch\\\\s*=\\\\s*\\\\\\(.{0,600}')",
+      "Bash(grep -oP '\\(akira-haga|Akira Haga|plantpot|location|company|bio|twitter\\)[^<]{0,200}')"
     ]
   }
 }

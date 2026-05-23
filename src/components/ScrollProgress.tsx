@@ -30,7 +30,7 @@ const ScrollProgress = () => {
       {/* Scroll to top button */}
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        className="fixed left-6 bottom-6 z-[6999] w-10 h-10 rounded-full flex items-center justify-center text-xs font-black transition-all duration-300"
+        className="fixed left-6 bottom-6 z-[6999] w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300"
         style={{
           background: "var(--card)",
           border: "1px solid var(--border)",

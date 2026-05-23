@@ -45,7 +45,7 @@ const SkillCircle = ({ name, level, color, inView, proficiencyLabel }: { name: s
         }}
       >
         <div
-          className="flex items-center justify-center font-black"
+          className="flex items-center justify-center font-semibold"
           style={{
             width: "40px",
             height: "40px",
@@ -93,10 +93,10 @@ const Skills = () => {
   const { ref, inView } = useInView();
 
   return (
-    <section id="skills" ref={ref} className="relative" style={{ background: "var(--background)", paddingTop: "var(--space-24)", paddingBottom: "var(--space-24)" }}>
+    <section id="skills" ref={ref} className="relative section-padding" style={{ background: "var(--background)" }}>
       <div className="absolute top-0 left-1/2 -translate-x-1/2 opacity-30" style={{ width: "800px", height: "1px", background: "linear-gradient(90deg, transparent, var(--primary), transparent)" }} />
 
-      <div style={{ maxWidth: "var(--max-w-content)", margin: "0 auto", paddingLeft: "var(--space-12)", paddingRight: "var(--space-12)" }}>
+      <div className="container-standard">
         <div className="flex items-end justify-between" style={{ marginBottom: "var(--space-12)" }}>
           <div>
             <p className="label-eyebrow" style={{ marginBottom: "var(--space-3)" }}>

@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, BookOpen, Languages, X } from "lucide-react";
+import { useScrollRestore } from "../hooks/useScrollRestore";
 import { useI18n, useSiteContent } from "../i18n";
 import { useThemeMode } from "../theme";
 import { bijieAiTranslations } from "../content/bijieAiTranslations";
 import { bEndTranslations } from "../content/bEndTranslations";
 import MusicPlayer from "../components/MusicPlayer";
+import PosterBoard from "../components/poster-board/Board";
 
 type WorksReturnState = {
   scrollTo?: string;
@@ -25,16 +27,16 @@ export default function WorkCase() {
   const file = work?.caseHref ?? null;
   const isSocksDetective = slug === "socks-detective";
   const isPosterCollection = slug === "poster-collection";
+  const hasLightBg = !isPosterCollection && slug !== "socks-detective" && resolvedTheme === "light";
   const isVideoCase = Boolean(file && /\.mp4($|\?)/i.test(file));
   const [maxImg, setMaxImg] = useState<number | null>(null);
+  useScrollRestore();
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [pageWidth, setPageWidth] = useState(1020);
   const [manifest, setManifest] = useState<null | { title: string; pages: Array<{ index: number; src: string; label: string }> }>(null);
   const [activeIdx, setActiveIdx] = useState(1);
   const [showNextCta, setShowNextCta] = useState(false);
   const [navHoverIdx, setNavHoverIdx] = useState<number | null>(null);
-  const [posterActiveIdx, setPosterActiveIdx] = useState(0);
-  const posterWheelLockRef = useRef(false);
 
   useEffect(() => {
     setMaxImg(null);
@@ -72,33 +74,11 @@ export default function WorkCase() {
     if (curIdx < 0) return null;
     return worksWithSlug[(curIdx + 1) % worksWithSlug.length] ?? null;
   }, [worksWithSlug, slug]);
-
-  const posterWheelItems = useMemo(
-    () =>
-      [
-        {
-          id: "poster-a",
-          bg: "linear-gradient(145deg, #0f172a 0%, #1e293b 45%, #334155 100%)",
-          accent: "linear-gradient(120deg, rgba(148,163,184,0.65), rgba(226,232,240,0.28))",
-        },
-        {
-          id: "poster-b",
-          bg: "linear-gradient(145deg, #312e81 0%, #4c1d95 45%, #701a75 100%)",
-          accent: "linear-gradient(120deg, rgba(216,180,254,0.7), rgba(253,224,71,0.24))",
-        },
-        {
-          id: "poster-c",
-          bg: "linear-gradient(145deg, #0c4a6e 0%, #0369a1 40%, #0f766e 100%)",
-          accent: "linear-gradient(120deg, rgba(165,243,252,0.7), rgba(125,211,252,0.26))",
-        },
-        {
-          id: "poster-d",
-          bg: "linear-gradient(145deg, #7f1d1d 0%, #be123c 50%, #9d174d 100%)",
-          accent: "linear-gradient(120deg, rgba(253,186,116,0.65), rgba(254,205,211,0.28))",
-        },
-      ],
-    [],
-  );
+  const prevWork = useMemo(() => {
+    const curIdx = worksWithSlug.findIndex((w) => w.slug === slug);
+    if (curIdx < 0) return null;
+    return worksWithSlug[(curIdx - 1 + worksWithSlug.length) % worksWithSlug.length] ?? null;
+  }, [worksWithSlug, slug]);
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -131,10 +111,6 @@ export default function WorkCase() {
       cancelled = true;
     };
   }, [slug]);
-
-  useEffect(() => {
-    setPosterActiveIdx(0);
-  }, [slug, lang]);
 
   // Robust active page tracking: compute by scroll position (works better for very tall pages).
   useEffect(() => {
@@ -236,29 +212,61 @@ export default function WorkCase() {
     }
   };
 
+  const goToNextWork = () => {
+    if (!nextWork) return;
+    if (nextWork.slug === "socks-detective") {
+      navigate(`/works/socks-detective/read`);
+    } else {
+      navigate(`/works/${nextWork.slug}`);
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const goToPrevWork = () => {
+    if (!prevWork) return;
+    if (prevWork.slug === "socks-detective") {
+      navigate(`/works/socks-detective/read`);
+    } else {
+      navigate(`/works/${prevWork.slug}`);
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <main
-      style={{
-        minHeight: "100vh",
-        background: resolvedTheme === "light" ? "rgb(6, 8, 14)" : "rgb(0,0,0)",
-        backgroundImage:
-          resolvedTheme === "light"
-            ? "radial-gradient(circle at 20% 10%, rgba(79,172,254,0.20), transparent 55%), radial-gradient(circle at 85% 18%, rgba(168,85,247,0.18), transparent 58%)"
-            : "radial-gradient(circle at 22% 12%, rgba(79,172,254,0.16), transparent 55%), radial-gradient(circle at 86% 18%, rgba(168,85,247,0.14), transparent 58%)",
-      }}
+      style={
+        isPosterCollection
+          ? {
+              width: "100vw",
+              height: "100vh",
+              overflow: "hidden",
+              background: "rgb(246, 247, 252)",
+            }
+          : hasLightBg
+            ? {
+                minHeight: "100vh",
+                background: "#FDFCFA",
+                backgroundImage: `
+                  radial-gradient(900px 600px at 18% 8%, rgba(230,200,255,0.10) 0%, transparent 55%),
+                  radial-gradient(700px 500px at 82% 85%, rgba(200,230,255,0.08) 0%, transparent 50%),
+                  radial-gradient(600px 400px at 50% 45%, rgba(255,240,230,0.06) 0%, transparent 50%)
+                `,
+              }
+            : {
+                minHeight: "100vh",
+                background: resolvedTheme === "light" ? "rgb(6, 8, 14)" : "rgb(0,0,0)",
+                backgroundImage:
+                  resolvedTheme === "light"
+                    ? "radial-gradient(circle at 20% 10%, rgba(79,172,254,0.20), transparent 55%), radial-gradient(circle at 85% 18%, rgba(168,85,247,0.18), transparent 58%)"
+                    : "radial-gradient(circle at 22% 12%, rgba(79,172,254,0.16), transparent 55%), radial-gradient(circle at 86% 18%, rgba(168,85,247,0.14), transparent 58%)",
+              }
+      }
     >
       <MusicPlayer playing={musicPlaying} onToggle={handleMusicToggle} />
       <button
         type="button"
         onClick={() => {
-          const st = location.state as WorksReturnState | null;
-          navigate("/", {
-            state: {
-              scrollTo: "works",
-              worksCarouselPage: typeof st?.worksCarouselPage === "number" ? st.worksCarouselPage : undefined,
-              worksCategory: typeof st?.worksCategory === "string" ? st.worksCategory : undefined,
-            },
-          });
+          try { sessionStorage.setItem("return-to-works", "1"); } catch {}
+          navigate("/");
         }}
         className="fixed z-[9000] flex items-center border transition-all duration-300 hover:scale-[1.02]"
         style={{
@@ -267,10 +275,11 @@ export default function WorkCase() {
           gap: "10px",
           padding: "10px 14px",
           borderRadius: "var(--radius-full)",
-          background: "rgba(0,0,0,0.45)",
-          color: "rgba(255,255,255,0.92)",
-          borderColor: "rgba(255,255,255,0.18)",
+          background: isPosterCollection ? "rgba(255,255,255,0.7)" : hasLightBg ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.45)",
+          color: isPosterCollection ? "rgba(0,0,0,0.8)" : hasLightBg ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.92)",
+          borderColor: isPosterCollection ? "rgba(0,0,0,0.08)" : hasLightBg ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.18)",
           backdropFilter: "blur(10px)",
+          boxShadow: isPosterCollection || hasLightBg ? "0 1px 3px rgba(0,0,0,0.04)" : undefined,
         }}
       >
         <ArrowLeft size={14} />
@@ -362,57 +371,185 @@ export default function WorkCase() {
         )
       ) : null}
 
-      {nextWork?.slug && showNextCta && !isVideoCase ? (
+      {nextWork?.slug && !isPosterCollection ? (
         <button
           type="button"
-          onClick={() => {
-            navigate(`/works/${nextWork.slug}`);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-          className="fixed z-[9000] flex items-center transition-all duration-300 hover:scale-[1.03]"
+          onClick={goToNextWork}
+          className="fixed z-[9000] flex items-center transition-all duration-300 hover:scale-[1.02]"
           style={{
             right: "16px",
             bottom: "16px",
             gap: "10px",
-            padding: "12px 14px",
+            padding: "10px 14px",
             borderRadius: "999px",
-            background: resolvedTheme === "light" ? "rgba(0,0,0,0.46)" : "rgba(0,0,0,0.5)",
-            border: "1px solid rgba(255,255,255,0.16)",
-            color: "rgba(255,255,255,0.92)",
-            backdropFilter: "blur(14px) saturate(1.15)",
-            boxShadow: "0 16px 56px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06) inset",
+            background: hasLightBg ? "rgba(255,255,255,0.7)" : resolvedTheme === "light" ? "rgba(0,0,0,0.46)" : "rgba(0,0,0,0.5)",
+            border: hasLightBg ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.16)",
+            color: hasLightBg ? "rgba(0,0,0,0.8)" : "rgba(255,255,255,0.92)",
+            backdropFilter: "blur(10px)",
+            boxShadow: hasLightBg ? "0 4px 16px rgba(0,0,0,0.06)" : "0 16px 56px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06) inset",
           }}
           title={lang === "en" ? `Next: ${nextWork.title}` : `下一个作品：${nextWork.title}`}
           aria-label={lang === "en" ? `Next work: ${nextWork.title}` : `下一个作品：${nextWork.title}`}
         >
-          <span
-            aria-hidden
-            style={{
-              width: "30px",
-              height: "30px",
-              borderRadius: "999px",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "linear-gradient(135deg, rgba(79,172,254,0.34) 0%, rgba(168,85,247,0.26) 100%)",
-              border: "1px solid rgba(255,255,255,0.18)",
-              boxShadow: "0 10px 28px rgba(0,0,0,0.38)",
-            }}
-          >
-            <ArrowRight size={14} />
-          </span>
-          <span style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
-            <span style={{ fontSize: "11px", fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", opacity: 0.82 }}>
-              {lang === "en" ? "Next work" : "下一个作品"}
-            </span>
-            <span style={{ opacity: 0.76, fontSize: "12px", maxWidth: "210px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {nextWork.title}
-            </span>
-          </span>
+          {hasLightBg ? (
+            <>
+              <span style={{ fontSize: "13px", fontWeight: 700 }}>
+                {lang === "en" ? "Next Project" : "下一个项目"}
+              </span>
+              <ArrowRight size={14} />
+            </>
+          ) : (
+            <>
+              <span
+                aria-hidden
+                style={{
+                  width: "30px",
+                  height: "30px",
+                  borderRadius: "999px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "linear-gradient(135deg, rgba(79,172,254,0.34) 0%, rgba(168,85,247,0.26) 100%)",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  boxShadow: "0 10px 28px rgba(0,0,0,0.38)",
+                }}
+              >
+                <ArrowRight size={14} />
+              </span>
+              <span style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+                <span style={{ fontSize: "11px", fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", opacity: 0.82 }}>
+                  {lang === "en" ? "Next work" : "下一个作品"}
+                </span>
+                <span style={{ opacity: 0.76, fontSize: "12px", maxWidth: "210px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {nextWork.title}
+                </span>
+              </span>
+            </>
+          )}
+        </button>
+      ) : null}
+      {prevWork?.slug && !isPosterCollection ? (
+        <button
+          type="button"
+          onClick={goToPrevWork}
+          className="fixed z-[9000] flex items-center transition-all duration-300 hover:scale-[1.02]"
+          style={{
+            left: "96px",
+            bottom: "16px",
+            gap: "10px",
+            padding: "10px 14px",
+            borderRadius: "999px",
+            background: hasLightBg ? "rgba(255,255,255,0.7)" : resolvedTheme === "light" ? "rgba(0,0,0,0.46)" : "rgba(0,0,0,0.5)",
+            border: hasLightBg ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.16)",
+            color: hasLightBg ? "rgba(0,0,0,0.8)" : "rgba(255,255,255,0.92)",
+            backdropFilter: "blur(10px)",
+            boxShadow: hasLightBg ? "0 4px 16px rgba(0,0,0,0.06)" : "0 16px 56px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06) inset",
+          }}
+          title={lang === "en" ? `Previous: ${prevWork.title}` : `上一个作品：${prevWork.title}`}
+          aria-label={lang === "en" ? `Previous work: ${prevWork.title}` : `上一个作品：${prevWork.title}`}
+        >
+          {hasLightBg ? (
+            <>
+              <ArrowLeft size={14} />
+              <span style={{ fontSize: "13px", fontWeight: 700 }}>
+                {lang === "en" ? "Prev Project" : "上一个项目"}
+              </span>
+            </>
+          ) : (
+            <>
+              <span style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0, alignItems: "flex-start" }}>
+                <span style={{ fontSize: "11px", fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", opacity: 0.82 }}>
+                  {lang === "en" ? "Prev work" : "上一个作品"}
+                </span>
+                <span style={{ opacity: 0.76, fontSize: "12px", maxWidth: "210px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {prevWork.title}
+                </span>
+              </span>
+              <span
+                aria-hidden
+                style={{
+                  width: "30px",
+                  height: "30px",
+                  borderRadius: "999px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "linear-gradient(135deg, rgba(79,172,254,0.34) 0%, rgba(168,85,247,0.26) 100%)",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  boxShadow: "0 10px 28px rgba(0,0,0,0.38)",
+                }}
+              >
+                <ArrowLeft size={14} />
+              </span>
+            </>
+          )}
         </button>
       ) : null}
 
       {isPosterCollection || file ? (
+
+        isPosterCollection ? (
+
+          <>
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+              }}
+            >
+              <PosterBoard />
+            </div>
+            {nextWork?.slug ? (
+              <button
+                type="button"
+                onClick={goToNextWork}
+                className="fixed z-[9000] flex items-center transition-all duration-300 hover:scale-[1.02]"
+                style={{
+                  right: "16px",
+                  bottom: "16px",
+                  gap: "10px",
+                  padding: "10px 14px",
+                  borderRadius: "999px",
+                  background: "rgba(255,255,255,0.7)",
+                  border: "1px solid rgba(0,0,0,0.08)",
+                  color: "rgba(0,0,0,0.8)",
+                  backdropFilter: "blur(10px)",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
+                }}
+              >
+                <span style={{ fontSize: "13px", fontWeight: 700 }}>
+                  {lang === "en" ? "Next Project" : "下一个项目"}
+                </span>
+                <ArrowRight size={14} />
+              </button>
+            ) : null}
+            {prevWork?.slug ? (
+              <button
+                type="button"
+                onClick={goToPrevWork}
+                className="fixed z-[9000] flex items-center transition-all duration-300 hover:scale-[1.02]"
+                style={{
+                  left: "96px",
+                  bottom: "16px",
+                  gap: "10px",
+                  padding: "10px 14px",
+                  borderRadius: "999px",
+                  background: "rgba(255,255,255,0.7)",
+                  border: "1px solid rgba(0,0,0,0.08)",
+                  color: "rgba(0,0,0,0.8)",
+                  backdropFilter: "blur(10px)",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
+                }}
+              >
+                <ArrowLeft size={14} />
+                <span style={{ fontSize: "13px", fontWeight: 700 }}>
+                  {lang === "en" ? "Prev Project" : "上一个项目"}
+                </span>
+              </button>
+            ) : null}
+          </>
+
+        ) : (
         <div
           ref={wrapRef}
           style={{
@@ -424,333 +561,63 @@ export default function WorkCase() {
             paddingRight: "16px",
           }}
         >
-          <div style={{ marginBottom: "18px" }}>
-            <div style={{ color: "rgba(255,255,255,0.78)", fontSize: "12px", letterSpacing: "0.18em", textTransform: "uppercase" }}>
-              {work?.category ?? (lang === "en" ? "Work" : "作品")}
+          <div style={{ marginBottom: "28px" }}>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              marginBottom: "12px",
+            }}>
+              <span style={{
+                width: "20px",
+                height: "2px",
+                borderRadius: "1px",
+                background: hasLightBg ? "linear-gradient(90deg, #7C5CFC, rgba(124,92,252,0.2))" : "rgba(255,255,255,0.4)",
+              }} />
+              <span style={{
+                color: hasLightBg ? "rgba(124,92,252,0.8)" : "rgba(255,255,255,0.78)",
+                fontSize: "11px",
+                letterSpacing: "0.28em",
+                textTransform: "uppercase",
+                fontWeight: 600,
+              }}>
+                {work?.category ?? (lang === "en" ? "Work" : "作品")}
+              </span>
             </div>
-            <div style={{ color: "rgba(255,255,255,0.96)", fontSize: "28px", fontWeight: 900, letterSpacing: "-0.02em", marginTop: "8px" }}>
+            <h1 style={{
+              color: hasLightBg ? "rgba(0,0,0,0.92)" : "rgba(255,255,255,0.96)",
+              fontSize: "clamp(28px, 3.2vw, 40px)",
+              fontWeight: 700,
+              letterSpacing: "-0.03em",
+              lineHeight: 1.15,
+              margin: "0 0 14px",
+              fontFamily: hasLightBg ? "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" : undefined,
+            }}>
               {work?.title ?? (lang === "en" ? "Case" : "作品集")}
-            </div>
+              {hasLightBg && (
+                <span style={{
+                  display: "block",
+                  width: "40px",
+                  height: "3px",
+                  borderRadius: "2px",
+                  background: "linear-gradient(90deg, #7C5CFC, transparent)",
+                  marginTop: "16px",
+                }} />
+              )}
+            </h1>
             {work?.subtitle ? (
-              <div style={{ color: "rgba(255,255,255,0.68)", fontSize: "14px", marginTop: "10px", lineHeight: 1.6, maxWidth: "780px" }}>
+              <p style={{
+                color: hasLightBg ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.68)",
+                fontSize: "15px",
+                marginTop: "0",
+                lineHeight: 1.7,
+                maxWidth: "680px",
+                fontWeight: 400,
+              }}>
                 {work.subtitle}
-              </div>
+              </p>
             ) : null}
           </div>
-
-          {isPosterCollection ? (
-            <div
-              onWheel={(e) => {
-                e.preventDefault();
-                if (posterWheelLockRef.current) return;
-                posterWheelLockRef.current = true;
-                window.setTimeout(() => {
-                  posterWheelLockRef.current = false;
-                }, 180);
-                setPosterActiveIdx((prev) => {
-                  const delta = e.deltaY > 0 ? 1 : -1;
-                  return (prev + delta + posterWheelItems.length) % posterWheelItems.length;
-                });
-              }}
-              style={{
-                position: "relative",
-                minHeight: "460px",
-                display: "grid",
-                gridTemplateColumns: "170px minmax(0,1fr)",
-                gap: "22px",
-                alignItems: "center",
-                overflow: "visible",
-              }}
-            >
-              <div style={{ display: "grid", gridTemplateColumns: "110px minmax(0,1fr)", gap: "18px", alignItems: "stretch" }}>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "14px" }}>
-                  <div
-                    style={{
-                      width: "132px",
-                      height: "104px",
-                      borderRadius: "24px",
-                      position: "relative",
-                      overflow: "hidden",
-                      background: "linear-gradient(185deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.08) 28%, rgba(7,9,18,0.72) 100%)",
-                      border: "1px solid rgba(255,255,255,0.22)",
-                      transform: `rotate(${(posterActiveIdx - 1.5) * 3}deg)`,
-                      transition: "transform 320ms cubic-bezier(0.22, 1, 0.36, 1)",
-                      boxShadow: "0 20px 44px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.26)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: "12px",
-                        top: "-10px",
-                        width: "60px",
-                        height: "20px",
-                        borderRadius: "12px 12px 0 0",
-                        background: "rgba(255,255,255,0.34)",
-                        border: "1px solid rgba(255,255,255,0.26)",
-                        borderBottom: "none",
-                      }}
-                    />
-                    {[0, 1, 2].map((layer) => (
-                      <div
-                        key={`folder-file-${layer}`}
-                        style={{
-                          position: "absolute",
-                          left: `${18 + layer * 12}px`,
-                          top: `${20 + (2 - layer) * 6}px`,
-                          width: "62px",
-                          height: "34px",
-                          borderRadius: "8px",
-                          transform: `rotate(${layer === 1 ? -7 : layer === 2 ? 8 : -2}deg)`,
-                          background: "linear-gradient(180deg, rgba(255,255,255,0.9), rgba(221,226,235,0.68))",
-                          border: "1px solid rgba(0,0,0,0.08)",
-                        }}
-                      />
-                    ))}
-                  </div>
-                  {posterWheelItems.map((_, idx) => (
-                    <button
-                      key={`folder-wheel-${idx}`}
-                      type="button"
-                      onClick={() => setPosterActiveIdx(idx)}
-                      style={{
-                        width: "18px",
-                        height: "58px",
-                        borderRadius: "14px",
-                        border: "1px solid rgba(255,255,255,0.18)",
-                        cursor: "pointer",
-                        background:
-                          posterActiveIdx === idx
-                            ? "linear-gradient(180deg, rgba(129,140,248,0.98), rgba(99,102,241,0.98))"
-                            : "rgba(255,255,255,0.2)",
-                        transform: `translateX(${posterActiveIdx === idx ? "8px" : "0px"}) scaleY(${posterActiveIdx === idx ? 1.02 : 0.9})`,
-                        boxShadow: posterActiveIdx === idx ? "0 8px 20px rgba(99,102,241,0.45)" : "none",
-                        transition: "all 220ms cubic-bezier(0.22, 1, 0.36, 1)",
-                      }}
-                      aria-label={`${lang === "en" ? "Go to item" : "切换到项目"} ${idx + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  position: "relative",
-                  height: "460px",
-                  overflow: "visible",
-                  perspective: "1300px",
-                  perspectiveOrigin: "50% 45%",
-                }}
-              >
-                {posterWheelItems.map((item, idx) => {
-                  let offset = idx - posterActiveIdx;
-                  if (offset > posterWheelItems.length / 2) offset -= posterWheelItems.length;
-                  if (offset < -posterWheelItems.length / 2) offset += posterWheelItems.length;
-                  const abs = Math.abs(offset);
-                  return (
-                    <div
-                      key={item.id}
-                      style={{
-                        position: "absolute",
-                        left: "14px",
-                        right: "22px",
-                        top: "26px",
-                        bottom: "28px",
-                        borderRadius: "26px",
-                        padding: "18px",
-                        border: "1px solid rgba(255,255,255,0.2)",
-                        background: "linear-gradient(145deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.03) 50%, rgba(10,12,22,0.2) 100%)",
-                        transform: `translate3d(${offset * 6}px, ${offset * 102}px, ${-abs * 120}px) rotateX(${offset * -8}deg) rotate(${offset * -1.2}deg) scale(${1 - abs * 0.09})`,
-                        opacity: abs > 2 ? 0 : 1 - abs * 0.26,
-                        filter: `blur(${abs * 0.7}px) saturate(${1 - abs * 0.12})`,
-                        transition:
-                          "transform 460ms cubic-bezier(0.22, 1, 0.36, 1), opacity 320ms ease, filter 320ms ease, box-shadow 320ms ease",
-                        pointerEvents: offset === 0 ? "auto" : "none",
-                        zIndex: posterWheelItems.length - abs,
-                        boxShadow: abs === 0 ? "0 36px 84px rgba(0,0,0,0.44)" : "0 18px 38px rgba(0,0,0,0.3)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          borderRadius: "20px",
-                          overflow: "hidden",
-                          border: "1px solid rgba(255,255,255,0.18)",
-                          background: "linear-gradient(90deg, #0b0b0d 0%, #0b0b0d 42%, #f3f4f6 42%, #ffffff 100%)",
-                          position: "relative",
-                        }}
-                      >
-                        {/* Left "folder cover" circle */}
-                        <div
-                          aria-hidden
-                          style={{
-                            position: "absolute",
-                            left: "-58%",
-                            top: "50%",
-                            transform: "translateY(-50%)",
-                            width: "120%",
-                            aspectRatio: "1 / 1",
-                            borderRadius: "999px",
-                            background: "radial-gradient(circle at 35% 40%, rgba(255,255,255,0.10), rgba(255,255,255,0) 55%), #0b0b0d",
-                            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
-                          }}
-                        />
-
-                        {/* Left title (folder-style area) */}
-                        <div
-                          style={{
-                            position: "absolute",
-                            left: "0",
-                            top: "0",
-                            bottom: "0",
-                            width: "42%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            padding: "24px 22px",
-                            color: "rgba(255,255,255,0.92)",
-                            zIndex: 2,
-                          }}
-                        >
-                          <div style={{ textAlign: "left", width: "100%", maxWidth: "220px" }}>
-                            <div style={{ height: "1px", width: "68px", background: "rgba(255,255,255,0.22)", marginBottom: "18px" }} />
-                            <div style={{ fontSize: "34px", fontWeight: 900, letterSpacing: "-0.02em", lineHeight: 1.05 }}>
-                              Nuestro
-                              <br />
-                              equipo
-                            </div>
-                            <div style={{ height: "1px", width: "68px", background: "rgba(255,255,255,0.22)", marginTop: "18px" }} />
-                          </div>
-                        </div>
-
-                        {/* Right collage area */}
-                        <div
-                          style={{
-                            position: "absolute",
-                            left: "42%",
-                            right: "0",
-                            top: "0",
-                            bottom: "0",
-                            background: "linear-gradient(180deg, #fbfbfc, #f1f3f6)",
-                            zIndex: 1,
-                          }}
-                        >
-                          {/* Diagonal separators */}
-                          {[
-                            { top: "22%", rot: -18 },
-                            { top: "53%", rot: -18 },
-                            { top: "84%", rot: -18 },
-                          ].map((sep) => (
-                            <div
-                              key={`sep-${sep.top}`}
-                              aria-hidden
-                              style={{
-                                position: "absolute",
-                                left: "-20%",
-                                right: "-20%",
-                                top: sep.top,
-                                height: "18px",
-                                background: "#0b0b0d",
-                                transform: `rotate(${sep.rot}deg)`,
-                                transformOrigin: "center",
-                                boxShadow: "0 10px 22px rgba(0,0,0,0.35)",
-                                opacity: 0.95,
-                              }}
-                            />
-                          ))}
-
-                          {/* Photo frames (use the provided sample image as placeholder) */}
-                          {[
-                            {
-                              key: "p1",
-                              top: "6%",
-                              left: "6%",
-                              w: "52%",
-                              h: "34%",
-                              rot: -12,
-                              pos: "18% 10%",
-                            },
-                            {
-                              key: "p2",
-                              top: "31%",
-                              left: "36%",
-                              w: "58%",
-                              h: "34%",
-                              rot: 10,
-                              pos: "70% 45%",
-                            },
-                            {
-                              key: "p3",
-                              top: "61%",
-                              left: "18%",
-                              w: "64%",
-                              h: "36%",
-                              rot: -6,
-                              pos: "55% 86%",
-                            },
-                          ].map((p) => (
-                            <div
-                              key={p.key}
-                              style={{
-                                position: "absolute",
-                                top: p.top,
-                                left: p.left,
-                                width: p.w,
-                                height: p.h,
-                                transform: `rotate(${p.rot}deg)`,
-                                borderRadius: "10px",
-                                background: "rgba(255,255,255,0.94)",
-                                boxShadow: "0 18px 44px rgba(0,0,0,0.30)",
-                                padding: "10px",
-                                zIndex: 2,
-                              }}
-                            >
-                              <div
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  borderRadius: "6px",
-                                  overflow: "hidden",
-                                  background: "#fff",
-                                }}
-                              >
-                                <img
-                                  src="/img/team-collage.png"
-                                  alt=""
-                                  style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover",
-                                    objectPosition: p.pos,
-                                    filter: "grayscale(1) contrast(1.1)",
-                                  }}
-                                  loading="lazy"
-                                />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Subtle glass overlay */}
-                        <div
-                          aria-hidden
-                          style={{
-                            position: "absolute",
-                            inset: 0,
-                            background:
-                              "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 38%, rgba(0,0,0,0.08) 100%)",
-                            pointerEvents: "none",
-                            zIndex: 3,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
 
           {isSocksDetective ? (
             <div
@@ -839,13 +706,15 @@ export default function WorkCase() {
                     borderRadius: "999px",
                     padding: "12px 8px",
                     background:
-                      "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.06) 60%, rgba(255,255,255,0.04) 100%)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    backdropFilter: "blur(10px)",
+                      hasLightBg
+                        ? "rgba(255,255,255,0.8)"
+                        : "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.06) 60%, rgba(255,255,255,0.04) 100%)",
+                    border: hasLightBg ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.12)",
+                    backdropFilter: "blur(12px)",
                     display: "flex",
                     flexDirection: "column",
                     gap: "10px",
-                    boxShadow: "0 18px 50px rgba(0,0,0,0.55)",
+                    boxShadow: hasLightBg ? "0 1px 3px rgba(0,0,0,0.04)" : "0 18px 50px rgba(0,0,0,0.55)",
                   }}
                 >
                   {manifest.pages.map((p) => {
@@ -867,11 +736,11 @@ export default function WorkCase() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          border: active ? "1px solid rgba(79,172,254,0.55)" : "1px solid rgba(255,255,255,0.12)",
+                          border: active ? "1px solid rgba(79,172,254,0.55)" : hasLightBg ? "1px solid rgba(0,0,0,0.1)" : "1px solid rgba(255,255,255,0.12)",
                           background: active
                             ? "linear-gradient(135deg, rgba(79,172,254,0.32) 0%, rgba(168,85,247,0.26) 100%)"
-                            : "rgba(255,255,255,0.06)",
-                          color: "rgba(255,255,255,0.9)",
+                            : hasLightBg ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)",
+                          color: hasLightBg ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.9)",
                           fontSize: "11px",
                           fontWeight: 800,
                           letterSpacing: "-0.01em",
@@ -896,13 +765,15 @@ export default function WorkCase() {
                               transform: "translateY(-50%)",
                               padding: "8px 10px",
                               borderRadius: "999px",
-                              background: "linear-gradient(135deg, rgba(79,172,254,0.22) 0%, rgba(168,85,247,0.18) 100%), rgba(0,0,0,0.55)",
-                              border: "1px solid rgba(79,172,254,0.18)",
-                              color: "rgba(255,255,255,0.92)",
+                              background: hasLightBg
+                                ? "#FFFFFF"
+                                : "linear-gradient(135deg, rgba(79,172,254,0.22) 0%, rgba(168,85,247,0.18) 100%), rgba(0,0,0,0.55)",
+                              border: hasLightBg ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(79,172,254,0.18)",
+                              color: hasLightBg ? "rgba(0,0,0,0.75)" : "rgba(255,255,255,0.92)",
                               fontSize: "11px",
                               whiteSpace: "nowrap",
                               pointerEvents: "none",
-                              boxShadow: "0 18px 60px rgba(0,0,0,0.55)",
+                              boxShadow: hasLightBg ? "0 4px 12px rgba(0,0,0,0.08)" : "0 18px 60px rgba(0,0,0,0.55)",
                             }}
                           >
                             {label}
@@ -920,11 +791,11 @@ export default function WorkCase() {
                     key={p.src}
                     id={`page-${p.index}`}
                     style={{
-                      borderRadius: "22px",
+                      borderRadius: "20px",
                       overflow: "hidden",
-                      background: "rgba(0,0,0,0.55)",
-                      boxShadow: "0 26px 70px rgba(0,0,0,0.62)",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: hasLightBg ? "#FFFFFF" : "rgba(0,0,0,0.55)",
+                      boxShadow: hasLightBg ? "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04)" : "0 26px 70px rgba(0,0,0,0.62)",
+                      border: hasLightBg ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.08)",
                     }}
                   >
                     <img data-avoid-music-player="true" src={p.src} alt={`${work?.title ?? "case"} ${p.label}`} style={{ width: "100%", display: "block" }} loading={p.index <= 2 ? "eager" : "lazy"} />
@@ -938,9 +809,9 @@ export default function WorkCase() {
               style={{
                 borderRadius: "22px",
                 overflow: "hidden",
-                background: "rgba(0,0,0,0.62)",
-                boxShadow: "0 26px 70px rgba(0,0,0,0.62)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                background: hasLightBg ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.62)",
+                boxShadow: hasLightBg ? "0 4px 20px rgba(0,0,0,0.06)" : "0 26px 70px rgba(0,0,0,0.62)",
+                border: hasLightBg ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.1)",
                 padding: "14px",
               }}
             >
@@ -963,11 +834,12 @@ export default function WorkCase() {
             </div>
           ) : null}
           {!isSocksDetective && !isVideoCase && !manifest?.pages?.length && file ? (
-            <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "14px", padding: "24px 0" }}>
+            <div style={{ color: hasLightBg ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.7)", fontSize: "14px", padding: "24px 0" }}>
               {lang === "en" ? "Case rendering is not configured for this slug yet." : "该作品暂未配置渲染方式。"}
             </div>
           ) : null}
         </div>
+        )
       ) : (
         <div className="h-full w-full flex items-center justify-center text-muted-foreground" style={{ fontSize: "var(--text-sm)" }}>
           {lang === "en" ? "Case not found." : "未找到该作品。"}

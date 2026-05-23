@@ -40,6 +40,7 @@ declare global {
   const Component: typeof import('lucide-react').Component
   const Contact: typeof import('lucide-react').Contact
   const Container: typeof import('lucide-react').Container
+  const Dices: typeof import('lucide-react').Dices
   const Download: typeof import('lucide-react').Download
   const Edit: typeof import('lucide-react').Edit
   const ExternalLink: typeof import('lucide-react').ExternalLink
@@ -48,6 +49,7 @@ declare global {
   const Figma: typeof import('lucide-react').Figma
   const Form: typeof import('lucide-react').Form
   const Fragment: typeof import('react').Fragment
+  const Gamepad2: typeof import('lucide-react').Gamepad2
   const Github: typeof import('lucide-react').Github
   const GraduationCap: typeof import('lucide-react').GraduationCap
   const GripVerticalIcon: typeof import('lucide-react').GripVerticalIcon
@@ -80,15 +82,16 @@ declare global {
   const OctagonXIcon: typeof import('lucide-react').OctagonXIcon
   const PanelLeftIcon: typeof import('lucide-react').PanelLeftIcon
   const Pause: typeof import('lucide-react').Pause
+  const Pin: typeof import('lucide-react').Pin
   const Plane: typeof import('lucide-react').Plane
   const Play: typeof import('lucide-react').Play
   const RotateCcw: typeof import('lucide-react').RotateCcw
   const Route: typeof import('lucide-react').Route
-  const Router: typeof import('lucide-react').Router
   const Save: typeof import('lucide-react').Save
   const Scale: typeof import('lucide-react').Scale
   const Scroll: typeof import('lucide-react').Scroll
   const SearchIcon: typeof import('lucide-react').SearchIcon
+  const Section: typeof import('lucide-react').Section
   const Send: typeof import('lucide-react').Send
   const Settings: typeof import('lucide-react').Settings
   const Sheet: typeof import('lucide-react').Sheet
@@ -96,10 +99,12 @@ declare global {
   const Sparkles: typeof import('lucide-react').Sparkles
   const Split: typeof import('lucide-react').Split
   const Star: typeof import('lucide-react').Star
+  const StickyNote: typeof import('lucide-react').StickyNote
   const Store: typeof import('lucide-react').Store
   const Sun: typeof import('lucide-react').Sun
   const Suspense: typeof import('react').Suspense
   const Table: typeof import('lucide-react').Table
+  const Tags: typeof import('lucide-react').Tags
   const Text: typeof import('lucide-react').Text
   const TriangleAlertIcon: typeof import('lucide-react').TriangleAlertIcon
   const Unlock: typeof import('lucide-react').Unlock
