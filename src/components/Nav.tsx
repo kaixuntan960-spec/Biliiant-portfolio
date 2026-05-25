@@ -45,8 +45,6 @@ const Nav = ({}: NavProps) => {
     <header
       data-cmp="Nav"
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        visible ? "" : "opacity-0 pointer-events-none"
-      } ${
         scrolled ? "backdrop-blur-xl border-b border-border" : ""
       }`}
       style={{ background: scrolled ? "var(--nav-bg-scrolled)" : "transparent", transition: "background 500ms ease, border-color 500ms ease" }}
@@ -61,9 +59,11 @@ const Nav = ({}: NavProps) => {
         }}
       >
         {/* Desktop Nav */}
-        <nav className="hidden xl:flex items-center justify-center flex-1" style={{ gap: "var(--space-8)" }}>
+        <nav className={`hidden xl:flex items-center justify-center flex-1 transition-all duration-500 ${
+          visible ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`} style={{ gap: "var(--space-8)" }}>
           <button
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            onClick={() => { const el = document.querySelector("#hero-section"); if (el) el.scrollIntoView({ behavior: "smooth" }); else window.scrollTo({ top: window.innerHeight, behavior: "smooth" }); }}
             className="flex items-center transition-all duration-200 hover:scale-105"
             style={{
               gap: "5px",
@@ -80,15 +80,7 @@ const Nav = ({}: NavProps) => {
             onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 0 8px rgba(168, 85, 247, 0.2), inset 0 0 6px rgba(168, 85, 247, 0.06)"; e.currentTarget.style.borderColor = "rgba(168, 85, 247, 0.5)"; }}
           >
             <Gamepad2 size={13} />
-            {lang === "zh" ? "抓娃娃" : "Claw"}
-          </button>
-          <button
-            onClick={() => { const el = document.querySelector("#hero-section"); if (el) el.scrollIntoView({ behavior: "smooth" }); else window.scrollTo({ top: window.innerHeight, behavior: "smooth" }); }}
-            className={`relative group transition-all duration-200 text-center text-muted-foreground hover:text-foreground`}
-            style={{ fontSize: "var(--text-sm)", letterSpacing: "0.05em" }}
-          >
             {lang === "zh" ? "首页" : "Home"}
-            <span className="absolute -bottom-0.5 left-0 h-px transition-all duration-300 w-0 bg-primary group-hover:w-full" />
           </button>
           {siteContent.nav.items.map((item) => (
             <button
@@ -246,6 +238,37 @@ const Nav = ({}: NavProps) => {
 
         {/* Compact controls for small screens */}
         <div className="xl:hidden flex items-center" style={{ gap: "10px" }}>
+          <a
+            href="/resume.pdf"
+            download={lang === "zh" ? "谭凯洵简历.pdf" : "Kaixun-Tan-Resume.pdf"}
+            className="flex items-center font-medium transition-all duration-300"
+            style={{
+              fontSize: "12px",
+              padding: "6px 12px",
+              borderRadius: "var(--radius-full)",
+              background: "var(--glass-soft)",
+              border: "1px solid var(--border)",
+              color: "var(--foreground)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {lang === "zh" ? "下载简历" : "Resume"}
+          </a>
+          <a
+            href="tel:+8615305029987"
+            className="flex items-center font-medium transition-all duration-300"
+            style={{
+              fontSize: "12px",
+              padding: "6px 12px",
+              borderRadius: "var(--radius-full)",
+              background: "var(--btn-primary-bg)",
+              color: "var(--primary-foreground)",
+              boxShadow: "var(--btn-primary-shadow)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {lang === "zh" ? "联系我" : "Contact"}
+          </a>
           <button
             type="button"
             onClick={toggleTheme}
@@ -285,7 +308,7 @@ const Nav = ({}: NavProps) => {
             {lang === "zh" ? "EN" : "中文"}
           </button>
 
-          <button className="text-foreground" onClick={() => setOpen(!open)} aria-label={lang === "en" ? "Open menu" : "打开菜单"}>
+          <button className={`text-foreground transition-all duration-500 ${visible ? "opacity-100" : "opacity-0 pointer-events-none"}`} onClick={() => setOpen(!open)} aria-label={lang === "en" ? "Open menu" : "打开菜单"}>
             {open ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
@@ -314,7 +337,7 @@ const Nav = ({}: NavProps) => {
           </button>
           <button
             type="button"
-            onClick={() => { setOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            onClick={() => { setOpen(false); const el = document.querySelector("#hero-section"); if (el) el.scrollIntoView({ behavior: "smooth" }); else window.scrollTo({ top: window.innerHeight, behavior: "smooth" }); }}
             className="flex items-center transition-all duration-200"
             style={{
               gap: "6px",
@@ -329,14 +352,6 @@ const Nav = ({}: NavProps) => {
             }}
           >
             <Gamepad2 size={13} />
-            {lang === "zh" ? "抓娃娃" : "Claw Machine"}
-          </button>
-          <button
-            type="button"
-            onClick={() => { setOpen(false); const el = document.querySelector("#hero-section"); if (el) el.scrollIntoView({ behavior: "smooth" }); else window.scrollTo({ top: window.innerHeight, behavior: "smooth" }); }}
-            className="text-left text-muted-foreground hover:text-primary transition-colors flex items-center"
-            style={{ fontSize: "var(--text-sm)", gap: "var(--space-2)" }}
-          >
             {lang === "zh" ? "首页" : "Home"}
           </button>
           {siteContent.nav.items.map((item) => (
@@ -352,6 +367,52 @@ const Nav = ({}: NavProps) => {
               )}
             </button>
           ))}
+          <div className="flex items-center gap-3 pt-2 border-t" style={{ borderColor: "var(--border)" }}>
+            <a
+              href={siteContent.nav.cta.href}
+              onClick={(e) => {
+                e.preventDefault();
+                handleNav(siteContent.nav.cta.href);
+              }}
+              className="font-medium transition-all duration-300 kz-shine-btn relative overflow-hidden"
+              style={{
+                fontSize: "var(--text-sm)",
+                padding: "8px 16px",
+                borderRadius: "var(--radius-full)",
+                background: "var(--btn-primary-bg)",
+                color: "var(--primary-foreground)",
+                boxShadow: "var(--btn-primary-shadow)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {siteContent.nav.cta.label}
+            </a>
+            <a
+              href="/resume.pdf"
+              download={lang === "zh" ? "谭凯洵简历.pdf" : "Kaixun-Tan-Resume.pdf"}
+              onClick={() => {
+                setResumeDownloaded(true);
+                if (resumeToastTimerRef.current) {
+                  window.clearTimeout(resumeToastTimerRef.current);
+                }
+                resumeToastTimerRef.current = window.setTimeout(() => {
+                  setResumeDownloaded(false);
+                }, 1800);
+              }}
+              className="font-medium transition-all duration-300 kz-shine-btn relative overflow-hidden"
+              style={{
+                fontSize: "var(--text-sm)",
+                padding: "8px 16px",
+                borderRadius: "var(--radius-full)",
+                background: "var(--btn-primary-bg)",
+                color: "var(--primary-foreground)",
+                boxShadow: "var(--btn-primary-shadow)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {lang === "zh" ? "下载简历" : "Resume"}
+            </a>
+          </div>
         </div>
       )}
     </header>

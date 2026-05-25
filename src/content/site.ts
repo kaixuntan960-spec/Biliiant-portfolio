@@ -70,10 +70,10 @@ export const siteContentZh = {
       name: "Kaixun Tan",
     },
     items: [
+      { label: "作品", href: "#works" },
       { label: "关于", href: "#about" },
       { label: "教育", href: "#education" },
       { label: "经历", href: "#experience" },
-      { label: "作品", href: "#works" },
       { label: "技能", href: "#skills" },
       { label: "生活", href: "#life", badgeDot: true },
       { label: "联系", href: "#contact" },
@@ -286,7 +286,7 @@ export const siteContentZh = {
         award: "",
         desc: "围绕 AIGC 创作流程，打通灵感生成、内容组织与视觉表达，沉淀为可演示的完整案例页面。",
         slug: "aigc",
-        coverImage: "/works/aigc/pages/001.png",
+        coverImage: "/works/aigc/pages/001.webp",
         caseHref: "/works/aigc",
       },
       {
@@ -300,7 +300,7 @@ export const siteContentZh = {
         featured: true,
         desc: "点击即可打开 PDF 作品详情：AI 项目「智能写作 · 笔捷AI」的设计过程与成果展示。",
         slug: "bijie-ai",
-        coverImage: "/works/bijie-ai-cover.png",
+        coverImage: "/works/bijie-ai-cover.webp",
         caseHref: "/works/bijie-ai.pdf",
       },
       {
@@ -314,7 +314,7 @@ export const siteContentZh = {
         featured: true,
         desc: "多角色（运营/客服/商品等）使用的商家后台：聚焦高频任务路径、信息密度与可读性，强化数据看板与操作效率。",
         slug: "b-end",
-        coverImage: "/works/b-end/pages/001.png",
+        coverImage: "/works/b-end/pages/001.webp",
         caseHref: "/works/b-end",
       },
       {
@@ -330,7 +330,7 @@ export const siteContentZh = {
         desc: "谭凯洵《袜子侦探社》电子绘本：进入互动模式可全屏读 PDF，支持摄像头点赞/倒赞翻页、触滑与方向键；右侧「侦探笔记」随页更新，并可在 clues.json 扩展谜面。",
         slug: "socks-detective",
         caseHref: "/works/socks-detective",
-        coverImage: "/works/socks-detective/cover.jpg",
+        coverImage: "/works/socks-detective/cover.webp",
       },
       {
         title: "海报设计 · 视觉合集",
@@ -344,7 +344,7 @@ export const siteContentZh = {
         award: "",
         desc: "覆盖活动海报、社媒配图与运营物料，强调信息层级清晰、视觉一致、可快速复用的模板化输出。",
         slug: "poster-collection",
-        coverImage: "/works/poster-collection/cover.png",
+        coverImage: "/works/poster-collection/cover.webp",
       },
       {
         title: "动画作品《闽南非遗》",
@@ -359,7 +359,7 @@ export const siteContentZh = {
         desc: "以闽南非遗文化为核心，围绕古厝屋脊、建筑细节与传统纹样进行动画化表达，通过景别切换、镜头衔接与节奏控制传达地域文化气质。",
         slug: "minnan-intangible",
         caseHref: "/works/minnan-intangible/minnan-intangible.mp4",
-        coverImage: "/works/minnan-intangible/cover.jpg",
+        coverImage: "/works/minnan-intangible/cover.webp",
       },
       {
         title: "手绘影片《祂的路》",
@@ -374,7 +374,7 @@ export const siteContentZh = {
         desc: "以新中国成立75周年为主题，围绕“祂的路”展开叙事，强调情绪铺垫、镜头衔接与节奏控制。",
         slug: "motion-rules",
         caseHref: "/works/motion-rules/motion-rules.mp4",
-        coverImage: "/works/motion-rules/cover.jpg",
+        coverImage: "/works/motion-rules/cover.webp",
       },
     ] satisfies WorkItem[],
   },
@@ -465,7 +465,6 @@ export const siteContentZh = {
     socialLinks: [
       { icon: "Mail", label: "Email", value: "392316610@qq.com", href: "mailto:392316610@qq.com" },
       { icon: "WeChat", label: "微信", value: "Biliiant_girl", href: "#" },
-      { icon: "Github", label: "GitHub", value: "（可补充）", href: "#" },
       { icon: "Linkedin", label: "电话", value: "（+86）15305029987", href: "#" },
     ] satisfies SocialLink[],
     presetQuestions: [
@@ -515,10 +514,10 @@ export const siteContentEn = {
       name: "Kaixun Tan",
     },
     items: [
+      { label: "Work", href: "#works" },
       { label: "About", href: "#about" },
       { label: "Education", href: "#education" },
       { label: "Experience", href: "#experience" },
-      { label: "Work", href: "#works" },
       { label: "Skills", href: "#skills" },
       { label: "Life", href: "#life", badgeDot: true },
       { label: "Contact", href: "#contact" },
@@ -731,7 +730,7 @@ export const siteContentEn = {
         award: "",
         desc: "An AIGC case project that connects ideation, content structuring, and visual output into a complete showcase flow.",
         slug: "aigc",
-        coverImage: "/works/aigc/pages/001.png",
+        coverImage: "/works/aigc/pages/001.webp",
         caseHref: "/works/aigc",
       },
       {
@@ -745,7 +744,7 @@ export const siteContentEn = {
         featured: true,
         desc: "A full case study showcasing the design process and outcomes for an AI writing product.",
         slug: "bijie-ai",
-        coverImage: "/works/bijie-ai-cover.png",
+        coverImage: "/works/bijie-ai-cover.webp",
         caseHref: "/works/bijie-ai.pdf",
       },
       {
@@ -759,7 +758,7 @@ export const siteContentEn = {
         featured: true,
         desc: "A multi-role merchant admin console focused on high-frequency tasks, readable data hierarchy, and efficient operations.",
         slug: "b-end",
-        coverImage: "/works/b-end/pages/001.png",
+        coverImage: "/works/b-end/pages/001.webp",
         caseHref: "/works/b-end",
       },
       {
@@ -775,7 +774,7 @@ export const siteContentEn = {
         desc: "An interactive PDF read for Tan Kaixun’s 《袜子侦探社》: camera thumbs-up/down to flip pages, swipe and arrow keys, plus per-page detective notes and riddles you can extend in public/works/socks-detective/clues.json.",
         slug: "socks-detective",
         caseHref: "/works/socks-detective",
-        coverImage: "/works/socks-detective/cover.jpg",
+        coverImage: "/works/socks-detective/cover.webp",
       },
       {
         title: "Poster Design · Visual Collection",
@@ -789,7 +788,7 @@ export const siteContentEn = {
         award: "",
         desc: "A collection of campaign posters and social visuals, designed with clear hierarchy and reusable templates.",
         slug: "poster-collection",
-        coverImage: "/works/poster-collection/cover.png",
+        coverImage: "/works/poster-collection/cover.webp",
       },
       {
         title: "Animation: Minnan Intangible Heritage",
@@ -804,7 +803,7 @@ export const siteContentEn = {
         desc: "An animated piece centered on Minnan intangible heritage, using traditional roofline motifs and architectural details to build visual narrative through rhythm and cinematic transitions.",
         slug: "minnan-intangible",
         caseHref: "/works/minnan-intangible/minnan-intangible.mp4",
-        coverImage: "/works/minnan-intangible/cover.jpg",
+        coverImage: "/works/minnan-intangible/cover.webp",
       },
       {
         title: "The Road of Her · 75th Anniversary Film",
@@ -819,7 +818,7 @@ export const siteContentEn = {
         desc: "An anniversary-themed animated short centered on emotional pacing, scene transitions, and storytelling clarity.",
         slug: "motion-rules",
         caseHref: "/works/motion-rules/motion-rules.mp4",
-        coverImage: "/works/motion-rules/cover.jpg",
+        coverImage: "/works/motion-rules/cover.webp",
       },
     ] satisfies WorkItem[],
   },
@@ -880,7 +879,6 @@ export const siteContentEn = {
     socialLinks: [
       { icon: "Mail", label: "Email", value: "392316610@qq.com", href: "mailto:392316610@qq.com" },
       { icon: "WeChat", label: "WeChat", value: "Biliiant_girl", href: "#" },
-      { icon: "Github", label: "GitHub", value: "(add later)", href: "#" },
       { icon: "Linkedin", label: "Phone", value: "(+86) 15305029987", href: "#" },
     ] satisfies SocialLink[],
     presetQuestions: [

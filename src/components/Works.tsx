@@ -96,6 +96,19 @@ const fourCardLayouts = [
 
 const singleCardLayout = { left: 369, top: 48, w: 382, h: 456, r: 0, z: 14, shiftX: 0, shiftY: -12, scale: 1.02 };
 
+const SPREAD_STAGE_WIDTH = 1400;
+const SPREAD_STAGE_HEIGHT = 470;
+
+const sevenCardLayouts = [
+  { left: 0,    top: 156, w: 176, h: 282, r: -16, z: 4,  shiftX: -10, shiftY: -4,  scale: 0.96 },
+  { left: 168,  top: 112, w: 204, h: 326, r: -10, z: 7,  shiftX: -7,  shiftY: -7,  scale: 0.97 },
+  { left: 348,  top: 66,  w: 234, h: 376, r: -4,  z: 11, shiftX: -3,  shiftY: -10, scale: 0.99 },
+  { left: 544,  top: 20,  w: 312, h: 436, r: 0,   z: 18, shiftX: 0,   shiftY: -14, scale: 1.02 },
+  { left: 818,  top: 66,  w: 234, h: 376, r: 4,   z: 12, shiftX: 3,   shiftY: -10, scale: 0.99 },
+  { left: 1028, top: 112, w: 204, h: 326, r: 10,  z: 8,  shiftX: 7,   shiftY: -7,  scale: 0.97 },
+  { left: 1224, top: 156, w: 176, h: 282, r: 16,  z: 5,  shiftX: 10,  shiftY: -4,  scale: 0.96 },
+];
+
 type CardLayout = typeof singleCardLayout;
 
 const getLayout = (pageLength: number, index: number): CardLayout => {
@@ -806,19 +819,19 @@ const WorksCarousel = ({ works, categoryKey }: { works: WorkItem[]; categoryKey:
       <div className="relative" id="works-carousel" ref={carouselRef}>
         {/* Desktop — grid: [prev] [stage] [next] */}
         <div
-          className="mx-auto hidden w-full max-w-[1400px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-2 pt-1 md:grid sm:gap-5 sm:px-6"
+          className="mx-auto hidden w-full max-w-[1400px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 px-4 pt-1 md:grid sm:gap-6 sm:px-10"
           style={{ minHeight: `${STAGE_HEIGHT}px` }}
         >
           <button
             type="button"
             onClick={goPrev}
-            className="z-30 flex h-10 w-10 shrink-0 items-center justify-center justify-self-center rounded-full transition-all hover:scale-110 hover:border-primary"
+            className="z-30 flex h-12 w-12 shrink-0 items-center justify-center justify-self-center rounded-full transition-all hover:scale-110 hover:border-primary"
             style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)", ...ambientButtonWrap }}
             {...ambientHandlers}
             aria-label={lang === "en" ? "Previous page" : "上一页"}
           >
             <span aria-hidden style={{ ...ambientLightLayerStyle, borderRadius: "999px" }} />
-            <ChevronLeft size={18} />
+            <ChevronLeft size={22} />
           </button>
 
           {/* Scalable stage */}
@@ -915,34 +928,103 @@ const WorksCarousel = ({ works, categoryKey }: { works: WorkItem[]; categoryKey:
           <button
             type="button"
             onClick={goNext}
-            className="z-30 flex h-10 w-10 shrink-0 items-center justify-center justify-self-center rounded-full transition-all hover:scale-110"
+            className="z-30 flex h-12 w-12 shrink-0 items-center justify-center justify-self-center rounded-full transition-all hover:scale-110"
             style={{ background: "var(--btn-primary-bg)", color: "var(--primary-foreground)", boxShadow: "var(--btn-primary-shadow)", ...ambientButtonWrap }}
             {...ambientHandlers}
             aria-label={lang === "en" ? "Next page" : "下一页"}
           >
             <span aria-hidden style={{ ...ambientLightLayerStyle, borderRadius: "999px" }} />
-            <ChevronRight size={18} />
+            <ChevronRight size={22} />
           </button>
         </div>
 
         {/* Mobile card list */}
-        <div className="md:hidden flex flex-col gap-4">
-          {currentWorks.map((work) => (
-            <div
-              key={`mobile-${work.title}`}
-              className="relative cursor-pointer overflow-hidden"
-              style={{ borderRadius: "18px", background: work.gradient, minHeight: "220px", border: "1px solid rgba(255,255,255,0.12)" }}
-              onClick={() => handleCardClick(work)}
-            >
-              {work.coverImage ? (
-                <div className="absolute inset-0" style={{ backgroundImage: `url(${work.coverImage})`, backgroundSize: "cover", backgroundPosition: "center" }} />
-              ) : null}
-              <div className="absolute bottom-0 left-0 right-0 p-4" style={{ background: "var(--media-bottom-overlay)" }}>
-                <div className="text-[11px] text-primary-foreground opacity-65">{work.category} · {work.year}</div>
-                <div className="text-primary-foreground font-semibold">{work.title}</div>
+        <div className="md:hidden flex flex-col gap-5 px-1">
+          {currentWorks.map((work, i) => {
+            const accent = accentByIdx[i % 3] ?? "#b58cff";
+            const gradient = cardGradients[i % 3] ?? cardGradients[0];
+            const titleColor = titleColorByIdx[i % 3] ?? "#9160d9";
+            const coverPos =
+              work.slug === "socks-detective" ? "center 64%"
+              : work.slug === "bijie-ai" ? "center 58%"
+              : work.slug === "aigc" ? "60% center"
+              : "center";
+            return (
+              <div
+                key={`mobile-${work.title}`}
+                className="relative cursor-pointer overflow-hidden"
+                style={{
+                  borderRadius: "24px",
+                  background: isDark
+                    ? `radial-gradient(140% 120% at 14% 12%, ${hexToRgba(accent, 0.16)} 0%, rgba(255,255,255,0.06) 46%, rgba(12,14,22,0.22) 100%), ${gradient}`
+                    : `radial-gradient(140% 120% at 12% 10%, ${hexToRgba(accent, 0.08)} 0%, rgba(255,255,255,0.76) 46%, rgba(255,255,255,0.38) 100%), ${gradient}`,
+                  border: isDark ? "1px solid rgba(255,255,255,0.18)" : "1px solid rgba(255,255,255,0.9)",
+                  boxShadow: isDark
+                    ? "0 16px 38px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)"
+                    : "0 18px 40px rgba(97,103,134,0.12), inset 0 1px 0 rgba(255,255,255,0.56)",
+                }}
+                onClick={() => handleCardClick(work)}
+              >
+                <div
+                  style={{
+                    margin: "14px",
+                    height: "180px",
+                    borderRadius: "16px",
+                    overflow: "hidden",
+                    background: isDark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.42)",
+                    border: isDark ? "1px solid rgba(255,255,255,0.16)" : "1px solid rgba(255,255,255,0.66)",
+                  }}
+                >
+                  {work.coverImage ? (
+                    <div
+                      className="w-full h-full"
+                      style={{
+                        backgroundImage: `url(${work.coverImage})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: coverPos,
+                      }}
+                    />
+                  ) : (
+                    <PlaceholderArtwork />
+                  )}
+                </div>
+                <div className="px-5 pb-4">
+                  <div className="font-black text-lg" style={{ color: titleColor, letterSpacing: "-0.02em" }}>
+                    {work.title}
+                  </div>
+                  <div
+                    className="mt-1 text-xs leading-relaxed"
+                    style={{
+                      color: hexToRgba(titleColor, isDark ? 0.86 : 0.76),
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {work.subtitle}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground">{work.category} · {work.year}</span>
+                    <div
+                      style={{
+                        width: "30px", height: "30px",
+                        borderRadius: "999px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: hexToRgba(accent, isDark ? 0.92 : 0.86),
+                        border: isDark ? "1px solid rgba(255,255,255,0.18)" : "1px solid rgba(255,255,255,0.5)",
+                        color: "rgba(255,255,255,0.98)",
+                      }}
+                    >
+                      <ArrowRight size={14} strokeWidth={2.8} />
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Pagination */}
@@ -970,24 +1052,24 @@ const WorksCarousel = ({ works, categoryKey }: { works: WorkItem[]; categoryKey:
               <button
                 type="button"
                 onClick={goPrev}
-                className="flex h-10 w-10 items-center justify-center rounded-full transition-all hover:scale-110 hover:border-primary"
+                className="flex h-11 w-11 items-center justify-center rounded-full transition-all hover:scale-110 hover:border-primary"
                 style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)", ...ambientButtonWrap }}
                 {...ambientHandlers}
                 aria-label={lang === "en" ? "Previous page" : "上一页"}
               >
                 <span aria-hidden style={{ ...ambientLightLayerStyle, borderRadius: "999px" }} />
-                <ChevronLeft size={16} />
+                <ChevronLeft size={20} />
               </button>
               <button
                 type="button"
                 onClick={goNext}
-                className="flex h-10 w-10 items-center justify-center rounded-full transition-all hover:scale-110"
+                className="flex h-11 w-11 items-center justify-center rounded-full transition-all hover:scale-110"
                 style={{ background: "var(--btn-primary-bg)", color: "var(--primary-foreground)", boxShadow: "var(--btn-primary-shadow)", ...ambientButtonWrap }}
                 {...ambientHandlers}
                 aria-label={lang === "en" ? "Next page" : "下一页"}
               >
                 <span aria-hidden style={{ ...ambientLightLayerStyle, borderRadius: "999px" }} />
-                <ChevronRight size={16} />
+                <ChevronRight size={20} />
               </button>
             </div>
           </div>
@@ -1007,11 +1089,228 @@ const WorksCarousel = ({ works, categoryKey }: { works: WorkItem[]; categoryKey:
   );
 };
 
+// ─── WorksSpread — 7 cards using same ProjectCard layout style ─────────────────
+
+// Match each card's color to what it would show in the carousel (category-relative index).
+const SPREAD_SLUG_COLOR_IDX: Record<string, number> = {
+  "aigc": 0,
+  "bijie-ai": 1,
+  "b-end": 2,
+  "socks-detective": 0,
+  "poster-collection": 0,
+  "minnan-intangible": 1,
+  "motion-rules": 0,
+};
+
+const WorksSpread = ({ works, lang }: { works: WorkItem[]; lang: string }) => {
+  const navigate = useNavigate();
+  const { resolvedTheme } = useThemeMode();
+  const isDark = resolvedTheme === "dark";
+  const detailLabel = lang === "en" ? "View details" : "查看详情";
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [stageScale, setStageScale] = useState(1);
+  const [bgPointer, setBgPointer] = useState({ x: 50, y: 50 });
+  const stageContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = stageContainerRef.current;
+    if (!container) return;
+    const update = () => {
+      const w = container.clientWidth;
+      if (w <= 0) return;
+      setStageScale(Math.min(1, Math.max(0.5, w / SPREAD_STAGE_WIDTH)));
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(container);
+    window.addEventListener("resize", update);
+    update();
+    return () => { observer.disconnect(); window.removeEventListener("resize", update); };
+  }, []);
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setBgPointer({ x: Math.max(8, Math.min(92, x)), y: Math.max(8, Math.min(92, y)) });
+  };
+
+  const handleCardClick = (work: WorkItem) => {
+    try { sessionStorage.setItem("works-show-all", "1"); } catch {}
+    if (work.slug === "socks-detective") { navigate("/works/socks-detective/read"); return; }
+    if (work.slug) { navigate(`/works/${work.slug}`); return; }
+    if (work.caseHref) window.open(work.caseHref, "_blank", "noopener,noreferrer");
+  };
+
+  return (
+    <div
+      ref={stageContainerRef}
+      className="relative mx-auto w-full max-w-[1400px] overflow-visible"
+      style={{ height: `${Math.round(SPREAD_STAGE_HEIGHT * stageScale) + 80}px` }}
+    >
+      <div
+        className="absolute left-1/2 top-0"
+        style={{
+          width: SPREAD_STAGE_WIDTH,
+          height: SPREAD_STAGE_HEIGHT,
+          transform: `translateX(-50%) scale(${stageScale})`,
+          transformOrigin: "top center",
+        }}
+        onPointerMove={handlePointerMove}
+      >
+        {/* Background glass panel — same as carousel */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+          style={{
+            top: "10px",
+            width: `${SPREAD_STAGE_WIDTH - 60}px`,
+            height: `${SPREAD_STAGE_HEIGHT - 20}px`,
+            borderRadius: "42px",
+            overflow: "hidden",
+            background: isDark
+              ? "linear-gradient(90deg, rgba(28,32,44,0.52) 0%, rgba(15,18,28,0.9) 50%, rgba(28,32,44,0.52) 100%)"
+              : "linear-gradient(90deg, rgba(255,250,246,0.58) 0%, rgba(240,229,255,0.78) 50%, rgba(255,250,246,0.58) 100%)",
+            boxShadow: isDark
+              ? "0 28px 80px rgba(0,0,0,0.1), inset 0 0 0 1px rgba(255,255,255,0.015)"
+              : "0 28px 70px rgba(150,132,174,0.06), inset 0 0 0 1px rgba(255,255,255,0.12)",
+          }}
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              background: isDark
+                ? `radial-gradient(620px 300px at ${bgPointer.x}% ${bgPointer.y}%, rgba(184,150,255,0.28), rgba(120,188,255,0.12) 45%, rgba(60,76,126,0.00) 78%)`
+                : `radial-gradient(600px 280px at ${bgPointer.x}% ${bgPointer.y}%, rgba(176,144,255,0.22), rgba(255,190,216,0.14) 44%, rgba(255,255,255,0.00) 78%)`,
+              transition: "background 220ms ease",
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background: isDark
+                ? "radial-gradient(circle at 18% 22%, rgba(255,255,255,0.05), transparent 32%), radial-gradient(circle at 82% 22%, rgba(184,156,255,0.07), transparent 28%), rgba(11,14,21,0.1)"
+                : "radial-gradient(circle at 18% 22%, rgba(255,255,255,0.8), transparent 30%), radial-gradient(circle at 82% 22%, rgba(255,214,233,0.26), transparent 28%), rgba(255,255,255,0.12)",
+              opacity: 0.62,
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              backdropFilter: isDark ? "blur(24px)" : "blur(20px)",
+              background: isDark
+                ? "linear-gradient(180deg, rgba(15,18,28,0.18) 0%, rgba(15,18,28,0.08) 42%, rgba(15,18,28,0.14) 100%)"
+                : "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 42%, rgba(255,248,245,0.14) 100%)",
+              boxShadow: isDark
+                ? "inset 0 0 0 1px rgba(255,255,255,0.01), inset 0 -44px 120px rgba(8,10,16,0.14)"
+                : "inset 0 0 0 1px rgba(255,255,255,0.16), inset 0 -44px 120px rgba(255,235,243,0.12)",
+            }}
+          />
+        </div>
+
+      {works.slice(0, 7).map((work, i) => {
+        const layout = sevenCardLayouts[i] ?? sevenCardLayouts[3];
+        const isHovered = hoveredIdx === i;
+        const colorIdx = SPREAD_SLUG_COLOR_IDX[work.slug ?? ""] ?? (i % 3);
+        const accent = accentByIdx[colorIdx] ?? "#b58cff";
+        const gradient = cardGradients[colorIdx] ?? "linear-gradient(180deg, #eee 0%, #e7e7e7 100%)";
+        const overlay1 = hexToRgba(accent, isDark ? 0.16 : 0.12);
+        const overlay2 = hexToRgba(accent, isDark ? 0.10 : 0.08);
+        const cardBg = isDark
+          ? `radial-gradient(140% 120% at 14% 12%, ${overlay1} 0%, rgba(255,255,255,0.06) 46%, rgba(12,14,22,0.22) 100%), ${gradient}, linear-gradient(180deg, rgba(21,24,33,0.2), rgba(21,24,33,0.18))`
+          : `radial-gradient(140% 120% at 12% 10%, ${overlay2} 0%, rgba(255,255,255,0.76) 46%, rgba(255,255,255,0.38) 100%), ${gradient}`;
+        const titleColor = titleColorByIdx[colorIdx] ?? "#9160d9";
+        const cardBorder = isDark ? "1px solid rgba(255,255,255,0.18)" : "1px solid rgba(255,255,255,0.9)";
+        const cardShadow = i === 3
+          ? (isDark ? "0 24px 58px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.08)" : "0 28px 62px rgba(84,88,122,0.16), inset 0 1px 0 rgba(255,255,255,0.66)")
+          : (isDark ? "0 16px 38px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)" : "0 18px 40px rgba(97,103,134,0.12), inset 0 1px 0 rgba(255,255,255,0.56)");
+        const subtitleColor = hexToRgba(titleColor, isDark ? 0.86 : 0.76);
+        const mediaBg = isDark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.42)";
+        const mediaBorder = isDark ? "1px solid rgba(255,255,255,0.16)" : "1px solid rgba(255,255,255,0.66)";
+        const detailButtonBg = "linear-gradient(135deg, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.86) 100%)";
+        const detailButtonBorder = isDark ? "1px solid rgba(255,255,255,0.5)" : "1px solid rgba(255,255,255,0.9)";
+        const detailButtonColor = hexToRgba(titleColor, isDark ? 0.98 : 0.94);
+        const contentTop = Math.round(layout.h * 0.53) + 26;
+        const coverPos =
+          work.slug === "socks-detective" ? "center 64%"
+          : work.slug === "bijie-ai" ? "center 58%"
+          : work.slug === "aigc" ? "60% center"
+          : "center";
+
+        const tx = isHovered ? layout.shiftX : 0;
+        const ty = isHovered ? layout.shiftY : 0;
+        const sc = isHovered ? layout.scale : 1;
+
+        return (
+          <div
+            key={work.slug || i}
+            className="absolute"
+            style={{
+              transform: `translate3d(${layout.left + tx}px, ${layout.top + ty}px, 0)`,
+              zIndex: layout.z,
+              willChange: "transform",
+              transition: "transform 460ms cubic-bezier(0.2, 0.98, 0.28, 1)",
+              pointerEvents: "auto",
+            }}
+          >
+            <div
+              className="cursor-pointer"
+              data-project-card="true"
+              style={{
+                width: `${layout.w}px`,
+                height: `${layout.h}px`,
+                transform: `rotate(${layout.r}deg) scale(${sc})`,
+                transformOrigin: "center center",
+                borderRadius: `${Math.round(layout.w * 0.12)}px`,
+                border: cardBorder,
+                background: cardBg,
+                boxShadow: cardShadow,
+                overflow: "hidden",
+                transition: "transform 460ms cubic-bezier(0.2, 0.98, 0.28, 1), box-shadow 300ms ease",
+                animation: `fadeIn 0.5s ease ${i * 70}ms both`,
+                backfaceVisibility: "hidden",
+              }}
+              onClick={() => handleCardClick(work)}
+              onMouseEnter={() => setHoveredIdx(i)}
+              onMouseLeave={() => setHoveredIdx(null)}
+            >
+            {/* Cover image */}
+            <div style={{ position: "absolute", left: `${Math.round(layout.w * 0.06)}px`, right: `${Math.round(layout.w * 0.06)}px`, top: `${Math.round(layout.w * 0.06)}px`, height: `${Math.round(layout.h * 0.46)}px`, borderRadius: `${Math.round(layout.w * 0.07)}px`, overflow: "hidden", background: mediaBg, border: mediaBorder }}>
+              {work.coverImage ? (
+                <div className="w-full h-full" style={{ backgroundImage: `url(${work.coverImage})`, backgroundSize: "cover", backgroundPosition: coverPos, transform: isHovered ? "scale(1.03)" : "scale(1)", transition: "transform 520ms cubic-bezier(0.22, 1, 0.36, 1)" }} />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center" style={{ background: work.gradient }}><span style={{ fontSize: `${Math.round(layout.w * 0.2)}px` }}>{work.emoji}</span></div>
+              )}
+            </div>
+
+            {/* Text */}
+            <div style={{ position: "absolute", left: `${Math.round(layout.w * 0.08)}px`, right: `${Math.round(layout.w * 0.08)}px`, top: `${contentTop}px`, bottom: `${Math.round(layout.h * 0.16)}px`, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+              <div className="font-black" style={{ fontSize: `${Math.min(Math.round(layout.w * 0.085), 22)}px`, lineHeight: 1.1, color: titleColor, letterSpacing: "-0.02em" }}>{work.title}</div>
+              <div style={{ marginTop: "4px", fontSize: `${Math.round(layout.w * 0.058)}px`, color: subtitleColor, lineHeight: 1.42, display: "-webkit-box", WebkitLineClamp: i === 3 ? 4 : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{work.subtitle}</div>
+            </div>
+
+            {/* Bottom actions */}
+            <div style={{ position: "absolute", left: `${Math.round(layout.w * 0.06)}px`, right: `${Math.round(layout.w * 0.06)}px`, bottom: `${Math.round(layout.h * 0.03)}px`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <button type="button" onClick={(e) => { e.stopPropagation(); handleCardClick(work); }} style={{ height: `${Math.round(layout.w * 0.12)}px`, borderRadius: "999px", padding: `0 ${Math.round(layout.w * 0.04)}px`, display: "flex", alignItems: "center", gap: "4px", color: detailButtonColor, fontWeight: 600, fontSize: `${Math.round(layout.w * 0.048)}px`, background: detailButtonBg, border: detailButtonBorder, cursor: "pointer" }}>
+                <ExternalLink size={Math.round(layout.w * 0.05)} strokeWidth={2.5} />{detailLabel}
+              </button>
+              <div style={{ width: `${Math.round(layout.w * 0.12)}px`, height: `${Math.round(layout.w * 0.12)}px`, borderRadius: "999px", display: "flex", alignItems: "center", justifyContent: "center", background: isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.7)", border: isDark ? "1px solid rgba(255,255,255,0.15)" : "1px solid rgba(255,255,255,0.8)" }}>
+                <ArrowUpRight size={Math.round(layout.w * 0.05)} style={{ color: titleColor }} />
+              </div>
+            </div>
+            </div>
+          </div>
+        );
+      })}
+      </div>
+    </div>
+  );
+};
+
 // ─── Works section ────────────────────────────────────────────────────────────
 
 const Works = () => {
   const { lang } = useI18n();
   const siteContent = useSiteContent();
+  const navigate = useNavigate();
   const CATEGORIES = siteContent.works.categories;
   const ALL_WORKS = siteContent.works.items;
   const { ref, inView } = useInView();
@@ -1037,16 +1336,41 @@ const Works = () => {
 
   const allLabel = lang === "en" ? "All" : "全部";
   const filtered = activeCategory === allLabel ? ALL_WORKS : ALL_WORKS.filter((w) => w.category === activeCategory);
+  const [showAll, setShowAll] = useState(() => {
+    try { return sessionStorage.getItem("works-show-all") === "1"; } catch { return false; }
+  });
+
+  // Spread order: 影片/绘本 at edges, UI projects centered with bijie-ai as the focal card
+  const spreadOrder = useMemo(() => {
+    const slugsInOrder = [
+      "minnan-intangible",  // 动画 — far left edge
+      "socks-detective",    // 绘本 — left edge
+      "aigc",               // UI — left-center
+      "bijie-ai",           // UI — center (focal)
+      "b-end",              // UI — right-center
+      "poster-collection",  // 海报 — right
+      "motion-rules",       // 动画 — far right edge
+    ];
+    return slugsInOrder.map((slug) => ALL_WORKS.find((w) => w.slug === slug)!).filter(Boolean);
+  }, [ALL_WORKS]);
+
+  useEffect(() => {
+    if (!inView) return;
+    ALL_WORKS.forEach((w) => {
+      if (w.coverImage) {
+        const img = new Image();
+        img.src = w.coverImage;
+      }
+    });
+  }, [inView, ALL_WORKS]);
 
   return (
     <section
       id="works"
       ref={ref}
       className="relative section-padding"
-      style={{ background: "var(--works-section-bg)", transition: "background 500ms ease" }}
+      style={{ background: "var(--works-section-bg)", transition: "background 500ms ease", paddingBottom: "var(--space-8)" }}
     >
-      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, var(--primary), transparent)" }} />
-
       <div className="container-standard">
         <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-12">
           <div>
@@ -1068,11 +1392,11 @@ const Works = () => {
           <p className="text-muted-foreground max-w-xs leading-relaxed text-sm mt-4 md:mt-0">{siteContent.works.headerDesc}</p>
         </div>
 
-        <div className="flex flex-wrap gap-3 mb-10">
+        <div className="mx-auto w-full max-w-[1120px] flex flex-wrap gap-3 mb-10 items-center">
           {CATEGORIES.map((cat) => (
             <button
               key={cat}
-              onClick={() => setActiveCategory(cat)}
+              onClick={() => { setActiveCategory(cat); setShowAll(false); try { sessionStorage.removeItem("works-show-all"); } catch {} }}
               className="px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.02]"
               style={{
                 background: activeCategory === cat ? "linear-gradient(135deg, rgba(124,58,237,0.95) 0%, rgba(99,102,241,0.95) 100%)" : "var(--card)",
@@ -1100,23 +1424,39 @@ const Works = () => {
               </span>
             </button>
           ))}
-        </div>
-
-        <div className={`transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-          {filtered.length > 0
-            ? <WorksCarousel key={activeCategory} works={filtered} categoryKey={activeCategory} />
-            : <div className="text-center py-20 text-muted-foreground">{siteContent.works.emptyText}</div>}
-        </div>
-
-        <div className="flex justify-center mt-16">
           <button
-            className="flex items-center gap-3 px-8 py-3.5 rounded-full border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary transition-all duration-300"
-            style={{ borderColor: "var(--border)" }}
+            onClick={() => {
+              setShowAll((prev) => {
+                const next = !prev;
+                try {
+                  if (next) sessionStorage.setItem("works-show-all", "1");
+                  else sessionStorage.removeItem("works-show-all");
+                } catch {}
+                return next;
+              });
+            }}
+            className="ml-auto px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.02]"
+            style={{
+              background: showAll ? "linear-gradient(135deg, rgba(124,58,237,0.95) 0%, rgba(99,102,241,0.95) 100%)" : "var(--card)",
+              color: showAll ? "rgba(255,255,255,0.96)" : "var(--muted-foreground)",
+              border: `1px solid ${showAll ? "rgba(255,255,255,0.16)" : "var(--border)"}`,
+              boxShadow: showAll ? "0 14px 38px rgba(99,102,241,0.22)" : "none",
+            }}
           >
-            {siteContent.works.loadMoreText}
-            <ArrowUpRight size={14} />
+            {lang === "zh" ? "全部" : "All"}
+            <span className="ml-2 text-xs opacity-60">{ALL_WORKS.length}</span>
           </button>
         </div>
+
+        {!showAll ? (
+          <div className={`transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+            {filtered.length > 0
+              ? <WorksCarousel key={activeCategory} works={filtered} categoryKey={activeCategory} />
+              : <div className="text-center py-20 text-muted-foreground">{siteContent.works.emptyText}</div>}
+          </div>
+        ) : (
+          <WorksSpread works={spreadOrder} lang={lang} />
+        )}
       </div>
     </section>
   );
