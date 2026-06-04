@@ -25,6 +25,7 @@ const StickyNote: React.FC<StickyNoteProps> = ({ theme, onClick, index }) => {
     { y: 80, z: 15 },    // index 2: 妇女节 — 微沉
     { y: 280, z: 25 },   // index 3: 摄影 — 下沉最多
     { y: 140, z: 18 },   // index 4: 元宵 — 中间值
+    { y: 60, z: 10 },    // index 5: 京东电商 — 微沉
   ];
   const stagger = staggerMap[index] ?? { y: 0, z: 10 };
   const left = (index % 3) * 640 + 3600;
@@ -73,6 +74,10 @@ const StickyNote: React.FC<StickyNoteProps> = ({ theme, onClick, index }) => {
             className="w-full h-auto block"
             referrerPolicy="no-referrer"
           />
+        </div>
+        <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400 group-hover:text-gray-600 transition-colors">
+          <span>👆</span>
+          <span>点击查看全部延展海报</span>
         </div>
       </div>
     </motion.div>
