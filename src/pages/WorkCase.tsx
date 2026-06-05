@@ -377,10 +377,10 @@ export default function WorkCase() {
           onClick={goToNextWork}
           className="fixed z-[9000] flex items-center transition-all duration-300 hover:scale-[1.02]"
           style={{
-            right: "16px",
-            bottom: "16px",
+            right: "40px",
+            bottom: "20px",
             gap: "10px",
-            padding: "10px 14px",
+            padding: "12px 18px",
             borderRadius: "999px",
             background: hasLightBg ? "rgba(255,255,255,0.7)" : resolvedTheme === "light" ? "rgba(0,0,0,0.46)" : "rgba(0,0,0,0.5)",
             border: hasLightBg ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.16)",
@@ -393,10 +393,10 @@ export default function WorkCase() {
         >
           {hasLightBg ? (
             <>
-              <span style={{ fontSize: "13px", fontWeight: 700 }}>
+              <span style={{ fontSize: "14px", fontWeight: 700 }}>
                 {lang === "en" ? "Next Project" : "下一个项目"}
               </span>
-              <ArrowRight size={14} />
+              <ArrowRight size={16} />
             </>
           ) : (
             <>
@@ -434,10 +434,10 @@ export default function WorkCase() {
           onClick={goToPrevWork}
           className="fixed z-[9000] flex items-center transition-all duration-300 hover:scale-[1.02]"
           style={{
-            left: "96px",
-            bottom: "16px",
+            left: "120px",
+            bottom: "20px",
             gap: "10px",
-            padding: "10px 14px",
+            padding: "12px 18px",
             borderRadius: "999px",
             background: hasLightBg ? "rgba(255,255,255,0.7)" : resolvedTheme === "light" ? "rgba(0,0,0,0.46)" : "rgba(0,0,0,0.5)",
             border: hasLightBg ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.16)",
@@ -450,8 +450,8 @@ export default function WorkCase() {
         >
           {hasLightBg ? (
             <>
-              <ArrowLeft size={14} />
-              <span style={{ fontSize: "13px", fontWeight: 700 }}>
+              <ArrowLeft size={16} />
+              <span style={{ fontSize: "14px", fontWeight: 700 }}>
                 {lang === "en" ? "Prev Project" : "上一个项目"}
               </span>
             </>
@@ -505,10 +505,10 @@ export default function WorkCase() {
                 onClick={goToNextWork}
                 className="fixed z-[9000] flex items-center transition-all duration-300 hover:scale-[1.02]"
                 style={{
-                  right: "16px",
-                  bottom: "16px",
+                  right: "40px",
+                  bottom: "20px",
                   gap: "10px",
-                  padding: "10px 14px",
+                  padding: "12px 18px",
                   borderRadius: "999px",
                   background: "rgba(255,255,255,0.7)",
                   border: "1px solid rgba(0,0,0,0.08)",
@@ -517,10 +517,10 @@ export default function WorkCase() {
                   boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
                 }}
               >
-                <span style={{ fontSize: "13px", fontWeight: 700 }}>
+                <span style={{ fontSize: "14px", fontWeight: 700 }}>
                   {lang === "en" ? "Next Project" : "下一个项目"}
                 </span>
-                <ArrowRight size={14} />
+                <ArrowRight size={16} />
               </button>
             ) : null}
             {prevWork?.slug ? (
@@ -529,10 +529,10 @@ export default function WorkCase() {
                 onClick={goToPrevWork}
                 className="fixed z-[9000] flex items-center transition-all duration-300 hover:scale-[1.02]"
                 style={{
-                  left: "96px",
-                  bottom: "16px",
+                  left: "120px",
+                  bottom: "20px",
                   gap: "10px",
-                  padding: "10px 14px",
+                  padding: "12px 18px",
                   borderRadius: "999px",
                   background: "rgba(255,255,255,0.7)",
                   border: "1px solid rgba(0,0,0,0.08)",
@@ -541,8 +541,8 @@ export default function WorkCase() {
                   boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
                 }}
               >
-                <ArrowLeft size={14} />
-                <span style={{ fontSize: "13px", fontWeight: 700 }}>
+                <ArrowLeft size={16} />
+                <span style={{ fontSize: "14px", fontWeight: 700 }}>
                   {lang === "en" ? "Prev Project" : "上一个项目"}
                 </span>
               </button>

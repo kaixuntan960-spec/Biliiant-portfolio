@@ -442,9 +442,22 @@ const MusicPlayer = ({ playing = false, onToggle = () => {} }: MusicPlayerProps)
         }
       });
     };
+    const onTouch = (e: TouchEvent) => {
+      const el = containerRef.current;
+      if (!el || draggingRef.current || !expandedRef.current) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const r = el.getBoundingClientRect();
+      const inside = touch.clientX >= r.left && touch.clientX <= r.right && touch.clientY >= r.top && touch.clientY <= r.bottom;
+      if (!inside) {
+        setExpanded(false);
+      }
+    };
     window.addEventListener("mousemove", onMove, { passive: true });
+    window.addEventListener("touchstart", onTouch, { passive: true });
     return () => {
       window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("touchstart", onTouch);
       if (rangeRafRef.current != null) window.cancelAnimationFrame(rangeRafRef.current);
     };
   }, []);

@@ -10,7 +10,7 @@ import MusicPlayer from "../components/MusicPlayer";
 const IMAGE_TOTAL = 23;
 const IMAGE_PAGES = Array.from({ length: IMAGE_TOTAL }, (_, idx) => {
   const fileNo = String(idx + 1).padStart(3, "0");
-  return `/works/socks-detective/images/${fileNo}.jpg`;
+  return `/works/socks-detective/images/${fileNo}.webp`;
 });
 const WIDE_IMAGE_RATIO_THRESHOLD = 2.2;
 // Explicit spread pages: keep these as 2-page panoramas.
@@ -206,17 +206,18 @@ const BookComponent = () => {
   const totalPages = IMAGE_TOTAL;
   const sizePreset = React.useMemo(() => {
     if (isMobile) {
-      const availW = Math.max(260, viewport.w - 24);
-      const availH = Math.max(340, viewport.h - 360);
-      const w = Math.max(220, Math.min(390, Math.min(availW, availH * 0.72)));
-      const h = Math.round(w / 0.72);
+      const availW = Math.max(260, viewport.w - 16);
+      const availH = Math.max(340, viewport.h - 200);
+      const perPageW = Math.max(140, Math.min(380, Math.min(availW / 2, availH * 0.74)));
+      const w = Math.round(perPageW);
+      const h = Math.round(perPageW / 0.74);
       return {
-        width: Math.round(w),
+        width: w,
         height: h,
-        minWidth: 220,
-        maxWidth: 390,
-        minHeight: 300,
-        maxHeight: 500,
+        minWidth: 140,
+        maxWidth: 380,
+        minHeight: 190,
+        maxHeight: 520,
       };
     }
     // Fit spread to both viewport width and height at any screen size.
@@ -378,15 +379,15 @@ const BookComponent = () => {
                 maxHeight={sizePreset.maxHeight}
                 drawShadow
                 flippingTime={980}
-                usePortrait={isMobile}
+                usePortrait={false}
                 startZIndex={0}
                 autoSize
                 maxShadowOpacity={0.38}
                 showCover
-                mobileScrollSupport
+                mobileScrollSupport={false}
                 clickEventForward
                 useMouseEvents
-                swipeDistance={8}
+                swipeDistance={1}
                 showPageCorners
                 disableFlipByClick={false}
                 onFlip={handleFlip}
@@ -424,10 +425,10 @@ const BookComponent = () => {
           onClick={() => navigate(`/works/${prevWork.slug}`)}
           className="fixed z-[9000] flex items-center transition-all duration-300 hover:scale-[1.02]"
           style={{
-            left: "96px",
-            bottom: "16px",
+            left: "120px",
+            bottom: "20px",
             gap: "10px",
-            padding: "10px 14px",
+            padding: "12px 18px",
             borderRadius: "999px",
             background: "rgba(255,248,235,0.75)",
             border: "1px solid rgba(160,130,100,0.15)",
@@ -436,10 +437,9 @@ const BookComponent = () => {
             boxShadow: "0 2px 8px rgba(140,110,80,0.08)",
           }}
           title={lang === "en" ? `Previous: ${prevWork.title}` : `上一个作品：${prevWork.title}`}
-          aria-label={lang === "en" ? `Previous work: ${prevWork.title}` : `上一个作品：${prevWork.title}`}
         >
-          <ArrowLeft size={14} />
-          <span style={{ fontSize: "13px", fontWeight: 600 }}>
+          <ArrowLeft size={16} />
+          <span style={{ fontSize: "14px", fontWeight: 700 }}>
             {lang === "en" ? "Prev Project" : "上一个项目"}
           </span>
         </button>
@@ -450,10 +450,10 @@ const BookComponent = () => {
           onClick={() => navigate(`/works/${nextWork.slug}`)}
           className="fixed z-[9000] flex items-center transition-all duration-300 hover:scale-[1.02]"
           style={{
-            right: "16px",
-            bottom: "16px",
+            right: "40px",
+            bottom: "20px",
             gap: "10px",
-            padding: "10px 14px",
+            padding: "12px 18px",
             borderRadius: "999px",
             background: "rgba(255,248,235,0.75)",
             border: "1px solid rgba(160,130,100,0.15)",
@@ -462,12 +462,11 @@ const BookComponent = () => {
             boxShadow: "0 2px 8px rgba(140,110,80,0.08)",
           }}
           title={lang === "en" ? `Next: ${nextWork.title}` : `下一个作品：${nextWork.title}`}
-          aria-label={lang === "en" ? `Next work: ${nextWork.title}` : `下一个作品：${nextWork.title}`}
         >
-          <span style={{ fontSize: "13px", fontWeight: 600 }}>
+          <span style={{ fontSize: "14px", fontWeight: 700 }}>
             {lang === "en" ? "Next Project" : "下一个项目"}
           </span>
-          <ArrowRight size={14} />
+          <ArrowRight size={16} />
         </button>
       ) : null}
     </Container>
@@ -573,8 +572,8 @@ const Title = styled.div`
 `;
 
 const BookWrap = styled.div`
-  width: min(92vw, 980px);
-  max-width: calc(100vw - 300px);
+  width: min(96vw, 980px);
+  max-width: calc(100vw - 16px);
   flex: 1 1 auto;
   min-height: 0;
   margin-top: 6px;
@@ -601,8 +600,8 @@ const BookWrap = styled.div`
   }
 
   @media (max-width: 980px) {
-    max-width: min(94vw, 980px);
-    padding: 8px;
+    max-width: min(98vw, 980px);
+    padding: 4px;
   }
 
   .sock-detective-book {
@@ -841,4 +840,5 @@ const CenteredGestureBar = styled.div`
   margin-bottom: 6px;
   z-index: 20;
 `;
+
 

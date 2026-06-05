@@ -303,9 +303,15 @@ const Contact = () => {
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", { name, email, message });
+    try {
+      await fetch("https://biliiant.top/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "contact", name, email, message }),
+      });
+    } catch {}
     setSent(true);
     setTimeout(() => setSent(false), 3000);
     setName("");

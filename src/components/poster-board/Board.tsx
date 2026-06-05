@@ -1,5 +1,5 @@
 import { motion, useMotionValue, useSpring } from 'motion/react';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { THEMES } from './data';
 import { PosterTheme } from './types';
 import PosterOverlay from './PosterOverlay';
@@ -9,7 +9,9 @@ import { useI18n } from '../../i18n';
 const Board: React.FC = () => {
   const { lang } = useI18n();
   const [selectedTheme, setSelectedTheme] = useState<PosterTheme | null>(null);
+  const [isPinching, setIsPinching] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const pinchRef = useRef<{ startDist: number; startScale: number } | null>(null);
 
   const x = useMotionValue(window.innerWidth / 2 - 4250);
   const y = useMotionValue(window.innerHeight / 2 - 4200);
@@ -35,6 +37,50 @@ const Board: React.FC = () => {
       if (target) target.removeEventListener('wheel', handleWheel);
     };
   }, [selectedTheme, scale]);
+
+  const getTouchDist = useCallback((t1: Touch, t2: Touch) => {
+    const dx = t1.clientX - t2.clientX;
+    const dy = t1.clientY - t2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }, []);
+
+  useEffect(() => {
+    const target = containerRef.current;
+    if (!target) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (selectedTheme || e.touches.length < 2) return;
+      e.preventDefault();
+      setIsPinching(true);
+      const dist = getTouchDist(e.touches[0], e.touches[1]);
+      pinchRef.current = { startDist: dist, startScale: scale.get() };
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!pinchRef.current || e.touches.length < 2) return;
+      e.preventDefault();
+      const dist = getTouchDist(e.touches[0], e.touches[1]);
+      const ratio = dist / pinchRef.current.startDist;
+      const newScale = Math.min(Math.max(pinchRef.current.startScale * ratio, 0.3), 1.5);
+      scale.set(newScale);
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        pinchRef.current = null;
+        setIsPinching(false);
+      }
+    };
+
+    target.addEventListener('touchstart', onTouchStart, { passive: false });
+    target.addEventListener('touchmove', onTouchMove, { passive: false });
+    target.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      target.removeEventListener('touchstart', onTouchStart);
+      target.removeEventListener('touchmove', onTouchMove);
+      target.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [selectedTheme, scale, getTouchDist]);
 
   const renderConnections = () => {
     const getPos = (i: number) => {
@@ -71,6 +117,7 @@ const Board: React.FC = () => {
       ref={containerRef}
       className="relative w-full h-full overflow-hidden cursor-grab active:cursor-grabbing select-none"
       style={{
+        touchAction: 'none',
         background: '#FCF9F6',
         backgroundImage: `
           radial-gradient(900px 700px at 10% 5%, rgba(160,120,255,0.20) 0%, transparent 58%),
@@ -87,22 +134,26 @@ const Board: React.FC = () => {
           <h2 className="text-2xl font-serif italic font-light text-gray-900 tracking-tight leading-none text-center">
             {lang === 'en' ? 'Poster Collection' : '海报展览'}
           </h2>
-          <div className="flex items-center justify-center gap-2 mt-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-            <p className="text-gray-400 text-[11px] font-light tracking-widest">
-              {lang === 'en' ? 'Tap a note for a surprise~' : '点击便签有惊喜噢~'}
-            </p>
-          </div>
+        </div>
+      </div>
+
+      {/* Floating hint tag */}
+      <div className="absolute top-[90px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+        <div className="px-4 py-2 bg-amber-50/90 backdrop-blur-md border border-amber-200/80 rounded-full shadow-md flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+          <span className="text-amber-700 text-xs font-medium tracking-wide">
+            {lang === 'en' ? 'Tap a sticky note for a surprise!' : '👆 点击便签有惊喜噢~'}
+          </span>
         </div>
       </div>
 
 
       <motion.div
-        drag
+        drag={!isPinching}
         dragConstraints={{ left: -4500, right: -2500, top: -4500, bottom: -2500 }}
         dragElastic={0.1}
         dragTransition={{ power: 0.2, timeConstant: 300 }}
-        style={{ x, y, scale: smoothScale, transformOrigin: '4250px 4200px' }}
+        style={{ x, y, scale: smoothScale, transformOrigin: '4250px 4200px', touchAction: 'none' }}
         className="relative w-[8000px] h-[8000px] transform-gpu"
       >
         <div

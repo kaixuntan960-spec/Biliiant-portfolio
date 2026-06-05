@@ -51,6 +51,7 @@ declare global {
   const Fragment: typeof import('react').Fragment
   const Gamepad2: typeof import('lucide-react').Gamepad2
   const Github: typeof import('lucide-react').Github
+  const Grab: typeof import('lucide-react').Grab
   const GraduationCap: typeof import('lucide-react').GraduationCap
   const GripVerticalIcon: typeof import('lucide-react').GripVerticalIcon
   const Group: typeof import('lucide-react').Group
@@ -60,6 +61,7 @@ declare global {
   const History: typeof import('lucide-react').History
   const Home: typeof import('lucide-react').Home
   const Icon: typeof import('lucide-react').Icon
+  const Infinity: typeof import('lucide-react').Infinity
   const Info: typeof import('lucide-react').Info
   const InfoIcon: typeof import('lucide-react').InfoIcon
   const Languages: typeof import('lucide-react').Languages

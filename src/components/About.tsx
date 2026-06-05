@@ -660,7 +660,7 @@ const About = () => {
   const sortedExperience = [...EXPERIENCE].sort((a, b) => parsePeriodStart(b.period) - parsePeriodStart(a.period));
 
   return (
-    <section id="about" className="relative overflow-hidden section-padding" style={{ background: "var(--background)" }}>
+    <section id="about" className="relative overflow-hidden section-padding" style={{ background: "var(--background)", paddingTop: "var(--space-12)" }}>
       <div className="container-standard">
         <div className="flex items-end justify-between" style={{ marginBottom: "var(--space-12)" }}>
           <div>
@@ -883,6 +883,9 @@ const About = () => {
             <h3 className="font-semibold text-foreground" style={{ fontSize: "var(--text-xl)" }}>
               {lang === "en" ? "Honors" : "荣誉奖项"}
             </h3>
+            <span className="text-xs text-muted-foreground" style={{ opacity: 0.6 }}>
+              {lang === "en" ? "Click to view details" : "点击可查看详情"}
+            </span>
             <span className="flex-1 h-px ml-2" style={{ background: "var(--border)" }} />
           </div>
           <div className="flex flex-wrap" style={{ gap: "var(--space-3)" }}>

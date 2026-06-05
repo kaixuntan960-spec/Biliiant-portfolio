@@ -14,6 +14,16 @@ const PosterOverlay: React.FC<PosterOverlayProps> = ({ theme, onClose }) => {
   const [mouseX, setMouseX] = useState<number | null>(null);
   const [showControls, setShowControls] = useState(false);
 
+  // Preload all images when overlay opens
+  useEffect(() => {
+    if (!theme) return;
+    const urls = [theme.mainPoster.imageUrl, ...theme.extensions.map((p) => p.imageUrl)];
+    urls.forEach((url) => {
+      const img = new Image();
+      img.src = url;
+    });
+  }, [theme]);
+
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || !theme?.extensions.length) return;
@@ -154,10 +164,9 @@ const PosterOverlay: React.FC<PosterOverlayProps> = ({ theme, onClose }) => {
                 {theme.extensions.map((poster, idx) => (
                   <motion.div
                     key={poster.id}
-                    initial={{ opacity: 0, scale: 0.5, y: 80, rotate: -6 }}
-                    whileInView={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
-                    viewport={{ once: false, margin: "-10%" }}
-                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                    initial={{ opacity: 0, x: 40 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.15 * (idx + 1), ease: [0.22, 1, 0.36, 1] }}
                     className="flex-shrink-0 flex flex-col gap-4 justify-center"
                     style={{ width: poster.width > poster.height ? 'min(600px, 75vw)' : 'min(380px, 60vw)' }}
                   >
@@ -169,6 +178,7 @@ const PosterOverlay: React.FC<PosterOverlayProps> = ({ theme, onClose }) => {
                           className="max-h-[65vh] max-w-full object-contain"
                           referrerPolicy="no-referrer"
                           draggable={false}
+                          loading="eager"
                         />
                       </div>
                       <div className="flex justify-between items-center shrink-0">

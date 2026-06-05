@@ -1,0 +1,28 @@
+name = "biliiant-notify"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+routes = [
+  { pattern = "biliiant.top/api/*", zone_name = "biliiant.top" }
+]
+
+[[kv_namespaces]]
+binding = "VISITOR_STORE"
+id = "abfd7c179a2f409d938fa5be6827c067"
+
+# ============================================================
+# 推送配置（二选一，推荐企业微信机器人 → 免费无限量）
+# ============================================================
+# 方式一：企业微信群机器人（推荐，免费，每分钟20条不限总量）
+# 1. 企业微信 App → 建群 → 群设置 → 群机器人 → 添加
+# 2. 复制 webhook URL 中的 key 值
+# 3. 设置方式（选一种）：
+#    A. 部署后去 Cloudflare Dashboard → Worker → 设置 → 添加环境变量
+#    B. 在本文件取消下面这行的注释并填入 key（注意不要提交到公开仓库）
+# [vars]
+# WECHAT_BOT_KEY = "你的企业微信机器人key"
+#
+# 方式二：Server酱（备选，免费版每天5条）
+# 部署后去 Cloudflare Dashboard 添加环境变量 SCT_KEY
+# [vars]
+# SCT_KEY = "你的Server酱SendKey"

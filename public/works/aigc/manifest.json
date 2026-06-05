@@ -1,12 +1,12 @@
 {
   "title": "AIGC Creation Assistant",
   "pages": [
-    { "index": 1, "src": "/works/aigc/pages/001.png", "label": "001" },
-    { "index": 2, "src": "/works/aigc/pages/002.png", "label": "002" },
-    { "index": 3, "src": "/works/aigc/pages/003.png", "label": "003" },
-    { "index": 4, "src": "/works/aigc/pages/004.png", "label": "004" },
-    { "index": 5, "src": "/works/aigc/pages/005.png", "label": "005" },
-    { "index": 6, "src": "/works/aigc/pages/006.png", "label": "006" },
-    { "index": 7, "src": "/works/aigc/pages/007.png", "label": "007" }
+    { "index": 1, "src": "/works/aigc/pages/001.webp", "label": "001" },
+    { "index": 2, "src": "/works/aigc/pages/002.webp", "label": "002" },
+    { "index": 3, "src": "/works/aigc/pages/003.webp", "label": "003" },
+    { "index": 4, "src": "/works/aigc/pages/004.webp", "label": "004" },
+    { "index": 5, "src": "/works/aigc/pages/005.webp", "label": "005" },
+    { "index": 6, "src": "/works/aigc/pages/006.webp", "label": "006" },
+    { "index": 7, "src": "/works/aigc/pages/007.webp", "label": "007" }
   ]
 }

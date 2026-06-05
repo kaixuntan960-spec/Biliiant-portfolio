@@ -1,24 +1,25 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { lazyRetry } from "../utils/lazyRetry";
 import Cursor from "../components/Cursor";
 import Nav from "../components/Nav";
-import ClawMachineHero from "../components/ClawMachineHero";
+
 import Hero from "../components/Hero";
 import Marquee from "../components/Marquee";
-import About from "../components/About";
 import Works from "../components/Works";
 import Skills from "../components/Skills";
-import Life from "../components/Life";
 import Contact from "../components/Contact";
 import Footer from "../components/Footer";
 import MusicPlayer from "../components/MusicPlayer";
 import MouseTrail from "../components/MouseTrail";
-import ModelLandingZone from "../components/ModelLandingZone";
 import SoundEffect from "../components/SoundEffect";
 import ScrollProgress from "../components/ScrollProgress";
 import EasterEgg from "../components/EasterEgg";
 import WelcomeGate from "../components/WelcomeGate";
 import LoadingScreen from "../components/LoadingScreen";
+
+const About = lazyRetry(() => import("../components/About"));
+const Life = lazyRetry(() => import("../components/Life"));
 
 /** Dev-only: set true to always show WelcomeGate; disables localStorage same-day skip inside WelcomeGate. */
 const FORCE_SHOW_WELCOME_GATE = false;
@@ -226,19 +227,12 @@ const Index = () => {
 
           <Nav />
           <main>
-            {/* 抓娃娃机作为首页 Hero */}
-            <section className="w-full h-screen relative">
-              <ClawMachineHero />
-            </section>
-            <div className="relative">
-              <Hero />
-              <ModelLandingZone />
-            </div>
+            <Hero />
             <Marquee />
-            <About />
             <Works />
+            <Suspense fallback={null}><About /></Suspense>
             <Skills />
-            <Life />
+            <Suspense fallback={null}><Life /></Suspense>
             <Contact />
           </main>
           <Footer />

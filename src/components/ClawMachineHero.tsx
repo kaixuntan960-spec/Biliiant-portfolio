@@ -190,17 +190,9 @@ export default function ClawMachineHero({ onNavigate }: ClawMachineHeroProps) {
   const [showActive, setShowActive] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(true);
   const [extraModels] = useState(0);
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    try {
-      const last = localStorage.getItem("claw_onboarding_date");
-      if (!last) return true;
-      const today = new Date().toDateString();
-      return last !== today;
-    } catch { return true; }
-  });
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const dismissOnboarding = () => {
     setShowOnboarding(false);
-    try { localStorage.setItem("claw_onboarding_date", new Date().toDateString()); } catch {}
   };
   const grabConstraint = useRef<Matter.Constraint | null>(null);
 
@@ -702,28 +694,28 @@ export default function ClawMachineHero({ onNavigate }: ClawMachineHeroProps) {
       const maxDist = document.documentElement.scrollHeight - heroBottom;
       const ratio = Math.min(distance / (maxDist || 1), 1);
       // Near sections: longer fall time; far sections: shorter fall time
-      const fallDelay = Math.round(600 + (1 - ratio) * 400);
-      const navDelay = Math.round(fallDelay + 200);
+      const fallDelay = Math.round(300 + (1 - ratio) * 200);
+      const navDelay = Math.round(fallDelay + 100);
       const fallVelocity = Math.round(10 + ratio * 20);
 
       // Step 1: scroll to target section
       setTimeout(() => {
         setShowActive(null);
         finishSequence();
-      }, 400);
+      }, 250);
 
       // Step 2: dispatch model after scroll completes — user sees it fall
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent("model-landed", {
           detail: { modelUrl, labelZh: section.labelZh, labelEn: section.labelEn, color: section.color, sectionId: section.id, fallVelocity },
         }));
-      }, 800);
+      }, 450);
 
       // Step 3: navigate to target section — timed to match fall speed
       setTimeout(() => {
         if (onNavigate) onNavigate(section.id);
         else scrollToSection(section.id);
-      }, 800 + navDelay);
+      }, 450 + navDelay);
     };
 
     const finishSequence = () => {

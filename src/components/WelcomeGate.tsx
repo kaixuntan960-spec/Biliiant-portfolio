@@ -3,7 +3,7 @@ import { Languages, ArrowRight, Volume2, VolumeX, Sun, Moon } from "lucide-react
 import { useI18n } from "../i18n";
 import { useThemeMode } from "../theme";
 
-const VISITOR_ENDPOINT = ""; // Optional: set to your backend URL to record visits
+const VISITOR_ENDPOINT = "https://biliiant.top/api/notify";
 const COMPANY_SEARCH_ENDPOINT = ""; // Optional: set company search API, query param: ?q=腾讯
 const PREVIEW_TRACK_SRC = "/music/bgm.mp3";
 
@@ -584,12 +584,17 @@ const WelcomeGate = ({ onComplete, allowStorageAutoComplete = true }: WelcomeGat
       // ignore storage errors
     }
 
-    if (VISITOR_ENDPOINT) {
+    const alreadyNotified = (() => {
+      try { return localStorage.getItem("visitor_notified") === "1"; } catch { return false; }
+    })();
+
+    if (VISITOR_ENDPOINT && !alreadyNotified) {
       try {
         await fetch(VISITOR_ENDPOINT, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            type: "visitor",
             company: company.trim() || null,
             lang: selectedLang,
             path: window.location.pathname + window.location.search,
@@ -597,6 +602,7 @@ const WelcomeGate = ({ onComplete, allowStorageAutoComplete = true }: WelcomeGat
             ts: new Date().toISOString(),
           }),
         });
+        localStorage.setItem("visitor_notified", "1");
       } catch {
         // silently ignore network errors
       }
@@ -787,7 +793,7 @@ const WelcomeGate = ({ onComplete, allowStorageAutoComplete = true }: WelcomeGat
           preload="auto"
           style={{ position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none" }}
         />
-        <canvas ref={petCanvasRef} style={{ width: "100%", height: "100%" }} />
+        <canvas ref={petCanvasRef} style={{ width: "100%", height: "100%", mixBlendMode: isDarkTheme ? "normal" : "multiply" }} />
       </div>
       <div
         aria-hidden
